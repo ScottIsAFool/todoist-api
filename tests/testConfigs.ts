@@ -11,7 +11,8 @@ export const getTarget = (): TodoistClient => {
 
 export const setThwackResponseData = (
     endPoint: string,
-    responseData: {}) => {
+    responseData: {},
+    status: number = 200) => {
     thwack.addEventListener('request', (event: ThwackRequestEvent) => {
         const { options } = event;
         if (options.url === endPoint) {
@@ -20,7 +21,7 @@ export const setThwackResponseData = (
             event.stopPropagation();
 
             return new thwack.ThwackResponse({
-                status: 200,
+                status: status,
                 data: responseData
             }, options);
         }

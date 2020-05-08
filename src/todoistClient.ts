@@ -1,9 +1,10 @@
 import * as endPoints from './endpoints';
 
+import { Project, Section } from './entities';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
+import thwack, { ThwackOptions } from 'thwack';
 
 import { Scopes } from './scopes';
-import thwack from 'thwack';
 
 export class TodoistClient {
     constructor(
@@ -17,6 +18,12 @@ export class TodoistClient {
     private _clientSecret: string;
     private _clientId: string
     private _accessToken: string | undefined;
+
+    //#region Authentication methods
+
+    setAccessToken(accessToken: string) {
+        this._accessToken = accessToken;
+    }
 
     getAuthUrl(scopes: Scopes[], state: string) {
         const scope = scopes.toString();
@@ -42,10 +49,7 @@ export class TodoistClient {
     }
 
     async revokeAccessTokens(): Promise<any> {
-        if (this._accessToken === undefined
-            || this._accessToken.trim() === "") {
-            throw Error;
-        }
+        this.checkForAccessToken();
 
         const data = {
             client_id: this._clientSecret,
@@ -54,10 +58,126 @@ export class TodoistClient {
         }
 
         await this.post<any>(
-            endPoints.AccessTokensRevoke,
+            endPoints.accessTokensRevoke,
             data,
             false,
             true);
+    }
+
+    //#endregion
+
+    //#region Project methods
+    async getAllProjects(): Promise<Project[]> {
+        this.checkForAccessToken();
+
+        const response = await this.get<Project[]>(endPoints.projects);
+        return response;
+    }
+
+    async createProject(project: Project): Promise<Project> {
+        this.checkForAccessToken();
+
+        if (this.stringIsUndefinedOrEmpty(project.name)) {
+            throw new Error("Project must have a name");
+        }
+
+        const response = await this.post<Project>(
+            endPoints.projects,
+            project
+        );
+
+        return response;
+    }
+
+    async getProject(projectId: number): Promise<Project> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.projects}/${projectId}`;
+
+        const response = await this.get<Project>(endPoint);
+
+        return response;
+    }
+
+    async updateProject(project: Project): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.projects}/${project.id}`;
+
+        await this.post<any>(endPoint, project);
+    }
+
+    async deleteProject(projectId: number): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.projects}/${projectId}`;
+
+        await this.delete(endPoint);
+    }
+    //#endregion
+
+    //#region Section methods
+
+    async getAllSections(): Promise<Section[]> {
+        this.checkForAccessToken();
+
+        const response = await this.get<Section[]>(endPoints.sections);
+
+        return response;
+    }
+
+    async createSection(section: Section): Promise<Section> {
+        this.checkForAccessToken();
+
+        if (this.stringIsUndefinedOrEmpty(section.name)) {
+            throw new Error("Section must have a name");
+        }
+
+        const response = await this.post<Section>(
+            endPoints.sections,
+            section
+        );
+
+        return response;
+    }
+
+    async getSection(sectionId: number): Promise<Section> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.sections}/${sectionId}`;
+
+        const response = await this.get<Section>(endPoint);
+
+        return response;
+    }
+
+    async updateSection(section: Section): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.sections}/${section.id}`;
+
+        await this.post<any>(endPoint, section);
+    }
+
+    async deleteSection(sectionId: number): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.sections}/${sectionId}`;
+
+        await this.delete(endPoint);
+    }
+
+    //#endregion
+
+    private checkForAccessToken() {
+        if (this.stringIsUndefinedOrEmpty(this._accessToken)) {
+            throw new Error("No access token set");
+        }
+    }
+
+    private stringIsUndefinedOrEmpty(str?: string): boolean {
+        return str === undefined
+            || str.trim() === "";
     }
 
     private async get<T>(
@@ -67,8 +187,15 @@ export class TodoistClient {
     ): Promise<T> {
         const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
         const url = apiUrl + endPoint;
+        const options: ThwackOptions = {};
 
-        const response = await thwack.get(url);
+        if (requiresAuthentication) {
+            options.headers = {
+                "Authentication": `Bearer ${this._accessToken}`
+            };
+        }
+
+        const response = await thwack.get(url, options);
 
         if (response.status >= 300)
             throw Error;
@@ -85,14 +212,43 @@ export class TodoistClient {
     ): Promise<T> {
         const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
         const url = apiUrl + endPoint;
+        const options: ThwackOptions = {};
 
-        const response = await thwack.post(url, data);
+        if (requiresAuthentication) {
+            options.headers = {
+                "Authentication": `Bearer ${this._accessToken}`
+            };
+        }
+
+        const response = await thwack.post(url, data, options);
 
         if (response.status >= 300)
             throw Error;
 
         const body = response.data;
         return body;
+    }
+
+    private async delete(
+        endPoint: string,
+        requiresAuthentication: boolean = true,
+        useSyncApi: boolean = false
+    ): Promise<any> {
+        const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
+        const url = apiUrl + endPoint;
+        const options: ThwackOptions = {};
+
+        if (requiresAuthentication) {
+            options.headers = {
+                "Authentication": `Bearer ${this._accessToken}`
+            };
+        }
+
+        const response = await thwack.delete(url, options);
+
+        if (response.status >= 300) {
+            throw new Error;
+        }
     }
 }
 
