@@ -1,0 +1,1 @@
+export const AccessTokensRevoke = "access_tokens/revoke";
