@@ -2,10 +2,16 @@
   "name": "todoist-api",
   "version": "0.0.1",
   "description": "Todoist REST API Wrapper",
-  "main": "index.js",
+  "main": "js/todoistClient.js",
+  "types": "js/todoistClient.d.ts",
   "scripts": {
+    "build": "tsc --build",
+    "start": "node ./out/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": [
+    "js/**/*"
+  ],
   "author": "Scott Lovegrove",
   "license": "MIT",
   "dependencies": {
