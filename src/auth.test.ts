@@ -31,8 +31,9 @@ test("checks the token exchange", async () => {
     expect(token).toBe(expectedToken);
 });
 
-test.each([200, 204])("checks the token revokation", (status: number) => {
+test.each([200, 204])("checks the token revokation", async (status: number) => {
     const target = getTarget();
+    target.setAccessToken("abcd");
 
     setThwackResponseData(
         baseSyncUrl + endPoints.accessTokensRevoke,
@@ -40,16 +41,32 @@ test.each([200, 204])("checks the token revokation", (status: number) => {
         status
     );
 
-    expect(async () => await target.revokeAccessTokens()).not.toThrow();
+    let error: Error | undefined;
+    try {
+        await target.revokeAccessTokens();
+    }
+    catch (e) {
+        error = e;
+    }
+
+    expect(error).toBeUndefined();
 });
 
-test("checks token revokation throws if no token set", () => {
+test("checks token revokation throws if no token set", async () => {
     const target = getTarget();
 
-    expect(target.revokeAccessTokens()).rejects.toEqual(new Error("No access token set"))
+    let error: Error | undefined;
+    try {
+        await target.revokeAccessTokens();
+    }
+    catch (e) {
+        error = e;
+    }
+
+    expect(error).toEqual(new Error("No access token set"))
 });
 
-test("checks token revokation throws if not 2xx status", () => {
+test("checks token revokation throws if not 2xx status", async () => {
     const target = getTarget();
     target.setAccessToken("abcd");
 
@@ -59,6 +76,14 @@ test("checks token revokation throws if not 2xx status", () => {
         403
     );
 
-    expect(target.revokeAccessTokens()).rejects.toEqual(new Error())
-})
+    let error: Error | undefined = undefined;
+    try {
+        await target.revokeAccessTokens();
+    }
+    catch (e) {
+        error = e;
+    }
+
+    expect(error).toEqual(new Error())
+});
 

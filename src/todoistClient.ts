@@ -2,7 +2,7 @@ import * as endPoints from './endpoints';
 
 import { Attachment, Comment, Label, Project, Section, Task } from './entities';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
-import thwack, { ThwackOptions } from 'thwack';
+import thwack, { ThwackOptions, ThwackResponse } from 'thwack';
 
 import { Scopes } from './scopes';
 
@@ -467,10 +467,16 @@ export class TodoistClient {
             };
         }
 
-        const response = await thwack.post(url, data, options);
+        let response: ThwackResponse<any>;
+        try {
+            response = await thwack.post(url, data, options);
 
-        if (response.status >= 300)
-            throw new Error;
+            if (response.status >= 300)
+                throw new Error();
+        }
+        catch (e) {
+            throw new Error();
+        }
 
         const body = response.data;
         return body;
