@@ -1,10 +1,50 @@
 import * as endPoints from './endpoints';
 
-import { Project, Section } from './entities';
+import { Attachment, Comment, Project, Section, Task } from './entities';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
 import thwack, { ThwackOptions } from 'thwack';
 
 import { Scopes } from './scopes';
+
+interface TaskOptionsBase {
+    label_ids?: number[],
+    priority?: priority,
+    due_string?: string,
+    due_date?: string,
+    due_datetime?: string,
+    due_lang?: string
+};
+
+export interface UpdateTaskOptions extends TaskOptionsBase {
+    content?: string,
+};
+
+export interface AddTaskOptions extends TaskOptionsBase {
+    content: string,
+    project_id?: number,
+    section_id?: number,
+    parent?: number,
+    order?: number,
+};
+
+export interface TaskFetchOptions {
+    project_id?: number,
+    label_id?: number,
+    filter?: string,
+    lang?: string
+};
+
+export enum priority {
+    urgent = 4,
+    high = 3,
+    medium = 2,
+    normal = 1
+};
+
+export interface AddCommentOptions {
+    content: string;
+    attachment?: Attachment
+};
 
 export class TodoistClient {
     constructor(
@@ -169,6 +209,159 @@ export class TodoistClient {
 
     //#endregion
 
+    //#region Task methods
+
+    async getTasks(fetchOptions?: TaskFetchOptions): Promise<Task[]> {
+        this.checkForAccessToken();
+
+        const response = this.get<Task[]>(
+            endPoints.tasks,
+            true, false,
+            fetchOptions);
+
+        return response;
+    }
+
+    async addTask(options: AddTaskOptions): Promise<Task> {
+        this.checkForAccessToken();
+
+        if (this.stringIsUndefinedOrEmpty(options.content)) {
+            throw new Error("You must supply content");
+        }
+
+        const response = await this.post<Task>(
+            endPoints.tasks,
+            options
+        );
+
+        return response;
+    }
+
+    async getTask(taskId: number): Promise<Task> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.tasks}/${taskId}`;
+        const response = this.get<Task>(endPoint);
+
+        return response;
+    }
+
+    async updateTask(taskId: number, options: UpdateTaskOptions): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.tasks}/${taskId}`;
+
+        await this.post<any>(endPoint, options);
+    }
+
+    async closeTask(taskId: number): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.tasks}/${taskId}/close`;
+
+        await this.post<any>(endPoint, {});
+    }
+
+    async reopenTask(taskId: number): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.tasks}/${taskId}/reopen`;
+
+        await this.post<any>(endPoint, {});
+    }
+
+    async deleteTask(taskId: number): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.tasks}/${taskId}`;
+
+        await this.delete(endPoint);
+    }
+
+    //#endregion
+
+    //#region Comment methods
+
+    async getTaskComments(taskId: number): Promise<Comment[]> {
+        this.checkForAccessToken();
+
+        const endpoint = `${endPoints.comments}?task_id=${taskId}`;
+
+        const response = await this.get<Comment[]>(endpoint);
+
+        return response;
+    }
+
+    async getProjectComments(projectId: number): Promise<Comment[]> {
+        this.checkForAccessToken();
+
+        const endpoint = `${endPoints.comments}?project_id=${projectId}`;
+
+        const response = await this.get<Comment[]>(endpoint);
+
+        return response;
+    }
+
+    addTaskComment(taskId: number, options: AddCommentOptions): Promise<Comment> {
+        this.checkForAccessToken();
+
+        if (this.stringIsUndefinedOrEmpty(options.content)) {
+            throw new Error("You must supply content for the comment");
+        }
+
+        const data = {
+            task_id: taskId,
+            ...options
+        };
+
+        return this.post<Comment>(endPoints.comments, data);
+    }
+
+    addProjectComment(projectId: number, options: AddCommentOptions): Promise<Comment> {
+        this.checkForAccessToken();
+
+        if (this.stringIsUndefinedOrEmpty(options.content)) {
+            throw new Error("You must supply content for the comment");
+        }
+
+        const data = {
+            project_id: projectId,
+            ...options
+        };
+
+        return this.post<Comment>(endPoints.comments, data);
+    }
+
+    getComment(commentId: number): Promise<Comment> {
+        this.checkForAccessToken();
+
+        const endpoint = `${endPoints.comments}/${commentId}`;
+
+        return this.get<Comment>(endpoint);
+    }
+
+    updateComment(commentId: number, content: string): Promise<any> {
+        this.checkForAccessToken();
+
+        if (this.stringIsUndefinedOrEmpty(content)) {
+            throw new Error("You must supply content for the comment");
+        }
+
+        const endpoint = `${endPoints.comments}/${commentId}`;
+
+        return this.post<any>(endpoint, { content: content });
+    }
+
+    deleteComment(commentId: number): Promise<any> {
+        this.checkForAccessToken();
+
+        const endpoint = `${endPoints.comments}/${commentId}`;
+
+        return this.delete(endpoint);
+    }
+
+    //#endregion
+
     private checkForAccessToken() {
         if (this.stringIsUndefinedOrEmpty(this._accessToken)) {
             throw new Error("No access token set");
@@ -183,11 +376,14 @@ export class TodoistClient {
     private async get<T>(
         endPoint: string,
         requiresAuthentication: boolean = true,
-        useSyncApi: boolean = false
+        useSyncApi: boolean = false,
+        params: {} = {}
     ): Promise<T> {
         const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
         const url = apiUrl + endPoint;
-        const options: ThwackOptions = {};
+        const options: ThwackOptions = {
+            params: params
+        };
 
         if (requiresAuthentication) {
             options.headers = {
@@ -195,10 +391,10 @@ export class TodoistClient {
             };
         }
 
-        const response = await thwack.get(url, options);
+        const response = await thwack.get(url);
 
         if (response.status >= 300)
-            throw Error;
+            throw new Error;
 
         const body = response.data;
         return body;
@@ -223,7 +419,7 @@ export class TodoistClient {
         const response = await thwack.post(url, data, options);
 
         if (response.status >= 300)
-            throw Error;
+            throw new Error;
 
         const body = response.data;
         return body;
@@ -255,4 +451,4 @@ export class TodoistClient {
 interface AccessToken {
     access_token: string,
     token_type: string
-}
+};
