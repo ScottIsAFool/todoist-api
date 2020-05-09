@@ -62,3 +62,10 @@ export interface Comment {
     content: string;
     attachment?: Attachment;
 };
+
+export interface Label {
+    id: number;
+    name: string;
+    order: number;
+    color: number;
+};

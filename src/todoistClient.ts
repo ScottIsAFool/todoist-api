@@ -1,6 +1,6 @@
 import * as endPoints from './endpoints';
 
-import { Attachment, Comment, Project, Section, Task } from './entities';
+import { Attachment, Comment, Label, Project, Section, Task } from './entities';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
 import thwack, { ThwackOptions } from 'thwack';
 
@@ -44,6 +44,16 @@ export enum priority {
 export interface AddCommentOptions {
     content: string;
     attachment?: Attachment
+};
+
+export interface AddLabelOptions {
+    name: string;
+    order?: number;
+};
+
+export interface UpdateLabelOptions {
+    name?: string;
+    order?: number;
 };
 
 export class TodoistClient {
@@ -361,6 +371,47 @@ export class TodoistClient {
     }
 
     //#endregion
+
+    //#region Label methods
+
+    getLabels(): Promise<Label[]> {
+        this.checkForAccessToken();
+
+        return this.get<Label[]>(endPoints.labels);
+    }
+
+    createLabel(options: AddLabelOptions): Promise<Label> {
+        this.checkForAccessToken();
+
+        return this.post<Label>(endPoints.labels, options);
+    }
+
+    getLabel(labelId: number): Promise<Label> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.labels}/${labelId}`;
+
+        return this.get<Label>(endPoint);
+    }
+
+    updateLabel(labelId: number, options: UpdateLabelOptions): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.labels}/${labelId}`;
+
+        return this.post<any>(endPoint, options);
+    }
+
+    deleteLabel(labelId: number): Promise<any> {
+        this.checkForAccessToken();
+
+        const endPoint = `${endPoints.labels}/${labelId}`;
+
+        return this.delete(endPoint);
+    }
+
+    //#endregion
+
 
     private checkForAccessToken() {
         if (this.stringIsUndefinedOrEmpty(this._accessToken)) {
