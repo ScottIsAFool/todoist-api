@@ -1,6 +1,6 @@
 import { ColorData, colorTestData } from '../tests/colorTestData';
 
-import { getColor } from './colors';
+import { getColor } from '../src/colors';
 
 test.each(colorTestData())(
     "Checks colors are right",

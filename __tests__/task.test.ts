@@ -1,4 +1,4 @@
-import * as endPoints from './endpoints';
+import * as endPoints from '../src/endpoints';
 
 import { getTarget, setThwackResponseData } from "../tests/testConfigs";
 import thwack, { ThwackErrorEvent } from 'thwack';

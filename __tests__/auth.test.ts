@@ -1,9 +1,9 @@
-import * as endPoints from './endpoints';
+import * as endPoints from '../src/endpoints';
 
-import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
+import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from '../src/consts';
 import { getTarget, setThwackResponseData } from "../tests/testConfigs";
 
-import { Scopes } from './scopes';
+import { Scopes } from '../src/scopes';
 
 test("ensures get auth url is correct", () => {
     const target = getTarget();
