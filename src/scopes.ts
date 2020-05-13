@@ -1,7 +1,7 @@
-export enum Scopes {
-    TaskAdd = "task:add",
-    DataRead = "data:read",
-    DataReadWrite = "data:read_write",
-    DataDelete = "data:delete",
-    ProjectDelete = "project:delete"
+export enum scopes {
+    taskAdd = "task:add",
+    dataRead = "data:read",
+    dataReadWrite = "data:read_write",
+    dataDelete = "data:delete",
+    projectDelete = "project:delete"
 }

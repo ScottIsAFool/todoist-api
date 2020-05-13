@@ -4,6 +4,8 @@ export interface Color {
     value: string;
 };
 
+export const isValidColor = (colorId: number) => colorId >= 30 && colorId <= 49;
+
 export const getColors = (): Color[] => {
     return [
         { name: "Berry Red", id: 30, value: "#b8255f" },

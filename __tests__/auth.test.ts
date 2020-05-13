@@ -3,15 +3,15 @@ import * as endPoints from '../src/endpoints';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from '../src/consts';
 import { getTarget, setThwackResponseData } from "../tests/testConfigs";
 
-import { Scopes } from '../src/scopes';
+import { scopes } from '../src/scopes';
 
 test("ensures get auth url is correct", () => {
     const target = getTarget();
-    const scopes = [Scopes.TaskAdd, Scopes.DataRead];
+    const scopesList = [scopes.taskAdd, scopes.dataRead];
     const state = "kwijibo";
     const expectedUrl = "https://todoist.com/oauth/authorize?client_id=1234&scope=task:add,data:read&state=kwijibo";
 
-    expect(target.getAuthUrl(scopes, state))
+    expect(target.getAuthUrl(scopesList, state))
         .toBe(expectedUrl);
 });
 
