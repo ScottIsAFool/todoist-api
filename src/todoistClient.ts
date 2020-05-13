@@ -235,6 +235,16 @@ export const getTask = (taskId: number): Promise<Task> => {
 };
 
 export const updateTask = (taskId: number, options: UpdateTaskOptions): Promise<any> => {
+    const [dueOptionsValid, dueOptionsCount] = hasValidDueOptions(options);
+
+    if (dueOptionsValid) {
+        throw new Error("Only set one due_* option to update the due time")
+    }
+
+    if (dueOptionsCount === 0 && !options.color && !options.content && !options.label_ids) {
+        throw new Error("Please update either due date, color, content, or labels")
+    }
+
     const endPoint = `${endPoints.tasks}/${taskId}`;
 
     return post<any>(endPoint, options);
@@ -455,4 +465,19 @@ const deleteCall = async (
 interface AccessToken {
     access_token: string,
     token_type: string
+};
+
+const hasValidDueOptions = (options: TaskOptionsBase): [boolean, number] => {
+    let dueOptionsSet = 0;
+    if (options.due_date) {
+        dueOptionsSet++;
+    }
+    if (options.due_datetime) {
+        dueOptionsSet++;
+    }
+    if (options.due_string) {
+        dueOptionsSet++;
+    }
+
+    return [dueOptionsSet <= 1, dueOptionsSet];
 };
