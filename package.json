@@ -15,6 +15,7 @@
   "author": "Scott Lovegrove",
   "license": "MIT",
   "dependencies": {
+    "@alcadica/state-manager": "^1.0.3",
     "thwack": "^0.5.0",
     "typescript": "^3.8.3"
   },

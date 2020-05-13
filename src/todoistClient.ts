@@ -4,6 +4,8 @@ import { Attachment, Comment, Label, Project, Section, Task } from './entities';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
 import thwack, { ThwackOptions, ThwackResponse } from 'thwack';
 
+import create from '@alcadica/state-manager';
+
 import { Color } from './colors';
 import { scopes } from './scopes';
 
@@ -58,18 +60,13 @@ export interface UpdateLabelOptions {
     order?: number;
 };
 
-// export class TodoistClient {
-//     constructor(
-//         clientSecret: string,
-//         clientId: string
-//     ) {
-//         _clientId = clientId;
-//         _clientSecret = clientSecret;
-//     }
+interface ClientDetails {
+    clientSecret: string;
+    clientId: string;
+};
 
-let _clientSecret: string;
-let _clientId: string
-let _accessToken: string | undefined;
+const clientDetailsState = create<ClientDetails>();
+const accessTokenState = create<AccessToken>();
 
 //#region Authentication methods
 
@@ -77,23 +74,25 @@ export const setClientDetails = (
     clientSecret: string,
     clientId: string
 ) => {
-    _clientSecret = clientSecret;
-    _clientId = clientId;
+    clientDetailsState.update({
+        clientId: clientId,
+        clientSecret: clientSecret
+    });
 }
 
 export const setAccessToken = (accessToken: string) => {
-    _accessToken = accessToken;
+    accessTokenState.update({ access_token: accessToken });
 };
 
 export const getAuthUrl = (scopes: scopes[], state: string) => {
     const scope = scopes.toString();
-    return `${authUrl}?client_id=${_clientId}&scope=${scope}&state=${state}`;
+    return `${authUrl}?client_id=${clientId()}&scope=${scope}&state=${state}`;
 };
 
 export const exchangeToken = async (code: string): Promise<string> => {
     const data = {
-        client_id: _clientId,
-        client_secret: _clientSecret,
+        client_id: clientId(),
+        client_secret: clientSecret(),
         code: code
     };
 
@@ -111,9 +110,9 @@ export const revokeAccessTokens = async (): Promise<any> => {
     checkForAccessToken();
 
     const data = {
-        client_id: _clientSecret,
-        client_secret: _clientSecret,
-        access_token: _accessToken
+        client_id: clientId(),
+        client_secret: clientSecret(),
+        access_token: accessToken()
     }
 
     await post<any>(
@@ -356,10 +355,14 @@ export const deleteLabel = (labelId: number): Promise<any> => {
 //#endregion
 
 const checkForAccessToken = () => {
-    if (stringIsUndefinedOrEmpty(_accessToken)) {
+    if (stringIsUndefinedOrEmpty(accessToken())) {
         throw new Error("No access token set");
     }
 };
+
+const accessToken = () => accessTokenState.getState().access_token;
+const clientId = () => clientDetailsState.getState().clientId;
+const clientSecret = () => clientDetailsState.getState().clientSecret;
 
 const stringIsUndefinedOrEmpty = (str?: string): boolean => {
     return str === undefined
@@ -381,7 +384,7 @@ const get = async <T>(
     if (requiresAuthentication) {
         checkForAccessToken();
         options.headers = {
-            "Authorization": `Bearer ${_accessToken}`
+            "Authorization": `Bearer ${accessToken()}`
         };
     }
 
@@ -407,7 +410,7 @@ const post = async <T>(
     if (requiresAuthentication) {
         checkForAccessToken();
         options.headers = {
-            "Authorization": `Bearer ${_accessToken}`
+            "Authorization": `Bearer ${accessToken()}`
         };
     }
 
@@ -438,7 +441,7 @@ const deleteCall = async (
     if (requiresAuthentication) {
         checkForAccessToken();
         options.headers = {
-            "Authorization": `Bearer ${_accessToken}`
+            "Authorization": `Bearer ${accessToken()}`
         };
     }
 
@@ -448,7 +451,6 @@ const deleteCall = async (
         throw new Error;
     }
 };
-// }
 
 interface AccessToken {
     access_token: string,
