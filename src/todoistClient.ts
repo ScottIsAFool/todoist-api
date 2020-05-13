@@ -58,409 +58,397 @@ export interface UpdateLabelOptions {
     order?: number;
 };
 
-export class TodoistClient {
-    constructor(
-        clientSecret: string,
-        clientId: string
-    ) {
-        this._clientId = clientId;
-        this._clientSecret = clientSecret;
+// export class TodoistClient {
+//     constructor(
+//         clientSecret: string,
+//         clientId: string
+//     ) {
+//         _clientId = clientId;
+//         _clientSecret = clientSecret;
+//     }
+
+let _clientSecret: string;
+let _clientId: string
+let _accessToken: string | undefined;
+
+//#region Authentication methods
+
+export const setClientDetails = (
+    clientSecret: string,
+    clientId: string
+) => {
+    _clientSecret = clientSecret;
+    _clientId = clientId;
+}
+
+export const setAccessToken = (accessToken: string) => {
+    _accessToken = accessToken;
+};
+
+export const getAuthUrl = (scopes: scopes[], state: string) => {
+    const scope = scopes.toString();
+    return `${authUrl}?client_id=${_clientId}&scope=${scope}&state=${state}`;
+};
+
+export const exchangeToken = async (code: string): Promise<string> => {
+    const data = {
+        client_id: _clientId,
+        client_secret: _clientSecret,
+        code: code
+    };
+
+    const response = await thwack.post(tokenUrl, data);
+
+    if (response.status !== 200)
+        throw Error;
+
+    const accessToken: AccessToken = response.data;
+
+    return accessToken.access_token;
+};
+
+export const revokeAccessTokens = async (): Promise<any> => {
+    checkForAccessToken();
+
+    const data = {
+        client_id: _clientSecret,
+        client_secret: _clientSecret,
+        access_token: _accessToken
     }
 
-    private _clientSecret: string;
-    private _clientId: string
-    private _accessToken: string | undefined;
+    await post<any>(
+        endPoints.accessTokensRevoke,
+        data,
+        false,
+        true);
+};
 
-    //#region Authentication methods
+//#endregion
 
-    setAccessToken(accessToken: string) {
-        this._accessToken = accessToken;
+//#region Project methods
+export const getAllProjects = (): Promise<Project[]> => {
+    return get<Project[]>(endPoints.projects);
+};
+
+export const createProject = (project: Project): Promise<Project> => {
+    if (stringIsUndefinedOrEmpty(project.name)) {
+        throw new Error("Project must have a name");
     }
 
-    getAuthUrl(scopes: scopes[], state: string) {
-        const scope = scopes.toString();
-        const s = `${authUrl}?client_id=${this._clientId}&scope=${scope}&state=${state}`;
-        return s;
+    return post<Project>(
+        endPoints.projects,
+        project
+    );
+};
+
+export const getProject = (projectId: number): Promise<Project> => {
+    const endPoint = `${endPoints.projects}/${projectId}`;
+
+    return get<Project>(endPoint);
+};
+
+export const updateProject = (project: Project): Promise<any> => {
+    const endPoint = `${endPoints.projects}/${project.id}`;
+
+    return post<any>(endPoint, project);
+};
+
+export const deleteProject = (projectId: number): Promise<any> => {
+    const endPoint = `${endPoints.projects}/${projectId}`;
+
+    return deleteCall(endPoint);
+};
+//#endregion
+
+//#region Section methods
+
+export const getAllSections = (): Promise<Section[]> => {
+    return get<Section[]>(endPoints.sections);
+};
+
+export const getProjectSections = (projectId: number): Promise<Section[]> => {
+    if (projectId <= 0) {
+        throw new Error("Invalid projectID");
     }
 
-    async exchangeToken(code: string): Promise<string> {
-        const data = {
-            client_id: this._clientId,
-            client_secret: this._clientSecret,
-            code: code
+    const data = {
+        project_id: projectId
+    };
+
+    return get<Section[]>(endPoints.sections, data);
+};
+
+export const createSection = (section: Section): Promise<Section> => {
+    if (stringIsUndefinedOrEmpty(section.name)) {
+        throw new Error("Section must have a name");
+    }
+
+    return post<Section>(
+        endPoints.sections,
+        section
+    );
+};
+
+export const getSection = (sectionId: number): Promise<Section> => {
+    const endPoint = `${endPoints.sections}/${sectionId}`;
+
+    return get<Section>(endPoint);
+};
+
+export const updateSection = (section: Section): Promise<any> => {
+    const endPoint = `${endPoints.sections}/${section.id}`;
+
+    return post<any>(endPoint, section);
+};
+
+export const deleteSection = (sectionId: number): Promise<any> => {
+    const endPoint = `${endPoints.sections}/${sectionId}`;
+
+    return deleteCall(endPoint);
+};
+
+//#endregion
+
+//#region Task methods
+
+export const getTasks = (fetchOptions?: TaskFetchOptions): Promise<Task[]> => {
+    return get<Task[]>(
+        endPoints.tasks,
+        fetchOptions);
+};
+
+export const addTask = (options: AddTaskOptions): Promise<Task> => {
+    if (stringIsUndefinedOrEmpty(options.content)) {
+        throw new Error("You must supply content");
+    }
+
+    return post<Task>(
+        endPoints.tasks,
+        options
+    );
+};
+
+export const getTask = (taskId: number): Promise<Task> => {
+    const endPoint = `${endPoints.tasks}/${taskId}`;
+    const response = get<Task>(endPoint);
+
+    return response;
+};
+
+export const updateTask = (taskId: number, options: UpdateTaskOptions): Promise<any> => {
+    const endPoint = `${endPoints.tasks}/${taskId}`;
+
+    return post<any>(endPoint, options);
+};
+
+export const closeTask = (taskId: number): Promise<any> => {
+    const endPoint = `${endPoints.tasks}/${taskId}/close`;
+
+    return post<any>(endPoint, {});
+};
+
+export const reopenTask = (taskId: number): Promise<any> => {
+    const endPoint = `${endPoints.tasks}/${taskId}/reopen`;
+
+    return post<any>(endPoint, {});
+};
+
+export const deleteTask = (taskId: number): Promise<any> => {
+    const endPoint = `${endPoints.tasks}/${taskId}`;
+
+    return deleteCall(endPoint);
+};
+
+//#endregion
+
+//#region Comment methods
+
+export const getTaskComments = (taskId: number): Promise<Comment[]> => {
+    const endpoint = `${endPoints.comments}?task_id=${taskId}`;
+
+    return get<Comment[]>(endpoint);
+};
+
+export const getProjectComments = (projectId: number): Promise<Comment[]> => {
+    const endpoint = `${endPoints.comments}?project_id=${projectId}`;
+
+    return get<Comment[]>(endpoint);
+};
+
+export const addTaskComment = (taskId: number, options: AddCommentOptions): Promise<Comment> => {
+    if (stringIsUndefinedOrEmpty(options.content)) {
+        throw new Error("You must supply content for the comment");
+    }
+
+    const data = {
+        task_id: taskId,
+        ...options
+    };
+
+    return post<Comment>(endPoints.comments, data);
+};
+
+export const addProjectComment = (projectId: number, options: AddCommentOptions): Promise<Comment> => {
+    if (stringIsUndefinedOrEmpty(options.content)) {
+        throw new Error("You must supply content for the comment");
+    }
+
+    const data = {
+        project_id: projectId,
+        ...options
+    };
+
+    return post<Comment>(endPoints.comments, data);
+};
+
+export const getComment = (commentId: number): Promise<Comment> => {
+    const endpoint = `${endPoints.comments}/${commentId}`;
+
+    return get<Comment>(endpoint);
+};
+
+export const updateComment = (commentId: number, content: string): Promise<any> => {
+    if (stringIsUndefinedOrEmpty(content)) {
+        throw new Error("You must supply content for the comment");
+    }
+
+    const endpoint = `${endPoints.comments}/${commentId}`;
+
+    return post<any>(endpoint, { content: content });
+};
+
+export const deleteComment = (commentId: number): Promise<any> => {
+    const endpoint = `${endPoints.comments}/${commentId}`;
+
+    return deleteCall(endpoint);
+};
+
+//#endregion
+
+//#region Label methods
+
+export const getLabels = (): Promise<Label[]> => {
+    return get<Label[]>(endPoints.labels);
+};
+
+export const createLabel = (options: AddLabelOptions): Promise<Label> => {
+    return post<Label>(endPoints.labels, options);
+};
+
+export const getLabel = (labelId: number): Promise<Label> => {
+    const endPoint = `${endPoints.labels}/${labelId}`;
+
+    return get<Label>(endPoint);
+};
+
+export const updateLabel = (labelId: number, options: UpdateLabelOptions): Promise<any> => {
+    const endPoint = `${endPoints.labels}/${labelId}`;
+
+    return post<any>(endPoint, options);
+};
+
+export const deleteLabel = (labelId: number): Promise<any> => {
+    const endPoint = `${endPoints.labels}/${labelId}`;
+
+    return deleteCall(endPoint);
+};
+
+//#endregion
+
+const checkForAccessToken = () => {
+    if (stringIsUndefinedOrEmpty(_accessToken)) {
+        throw new Error("No access token set");
+    }
+};
+
+const stringIsUndefinedOrEmpty = (str?: string): boolean => {
+    return str === undefined
+        || str.trim() === "";
+};
+
+const get = async <T>(
+    endPoint: string,
+    params: {} = {},
+    requiresAuthentication: boolean = true,
+    useSyncApi: boolean = false
+): Promise<T> => {
+    const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
+    const url = apiUrl + endPoint;
+    const options: ThwackOptions = {
+        params: params
+    };
+
+    if (requiresAuthentication) {
+        checkForAccessToken();
+        options.headers = {
+            "Authorization": `Bearer ${_accessToken}`
         };
-
-        const response = await thwack.post(tokenUrl, data);
-
-        if (response.status !== 200)
-            throw Error;
-
-        const accessToken: AccessToken = response.data;
-
-        return accessToken.access_token;
     }
 
-    async revokeAccessTokens(): Promise<any> {
-        this.checkForAccessToken();
+    const response = await thwack.get(url);
 
-        const data = {
-            client_id: this._clientSecret,
-            client_secret: this._clientSecret,
-            access_token: this._accessToken
-        }
+    if (response.status >= 300)
+        throw new Error;
 
-        await this.post<any>(
-            endPoints.accessTokensRevoke,
-            data,
-            false,
-            true);
-    }
+    const body = response.data;
+    return body;
+};
 
-    //#endregion
+const post = async <T>(
+    endPoint: string,
+    data: {},
+    requiresAuthentication: boolean = true,
+    useSyncApi: boolean = false
+): Promise<T> => {
+    const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
+    const url = apiUrl + endPoint;
+    const options: ThwackOptions = {};
 
-    //#region Project methods
-    async getAllProjects(): Promise<Project[]> {
-        const response = await this.get<Project[]>(endPoints.projects);
-        return response;
-    }
-
-    async createProject(project: Project): Promise<Project> {
-        if (this.stringIsUndefinedOrEmpty(project.name)) {
-            throw new Error("Project must have a name");
-        }
-
-        const response = await this.post<Project>(
-            endPoints.projects,
-            project
-        );
-
-        return response;
-    }
-
-    async getProject(projectId: number): Promise<Project> {
-        const endPoint = `${endPoints.projects}/${projectId}`;
-
-        const response = await this.get<Project>(endPoint);
-
-        return response;
-    }
-
-    async updateProject(project: Project): Promise<any> {
-        const endPoint = `${endPoints.projects}/${project.id}`;
-
-        await this.post<any>(endPoint, project);
-    }
-
-    async deleteProject(projectId: number): Promise<any> {
-        const endPoint = `${endPoints.projects}/${projectId}`;
-
-        await this.delete(endPoint);
-    }
-    //#endregion
-
-    //#region Section methods
-
-    async getAllSections(): Promise<Section[]> {
-        const response = await this.get<Section[]>(endPoints.sections);
-
-        return response;
-    }
-
-    getProjectSections(projectId: number): Promise<Section[]> {
-        if (projectId <= 0) {
-            throw new Error("Invalid projectID");
-        }
-
-        const data = {
-            project_id: projectId
+    if (requiresAuthentication) {
+        checkForAccessToken();
+        options.headers = {
+            "Authorization": `Bearer ${_accessToken}`
         };
-
-        return this.get<Section[]>(endPoints.sections, data);
     }
 
-    async createSection(section: Section): Promise<Section> {
-        if (this.stringIsUndefinedOrEmpty(section.name)) {
-            throw new Error("Section must have a name");
-        }
-
-        const response = await this.post<Section>(
-            endPoints.sections,
-            section
-        );
-
-        return response;
-    }
-
-    async getSection(sectionId: number): Promise<Section> {
-        const endPoint = `${endPoints.sections}/${sectionId}`;
-
-        const response = await this.get<Section>(endPoint);
-
-        return response;
-    }
-
-    async updateSection(section: Section): Promise<any> {
-        const endPoint = `${endPoints.sections}/${section.id}`;
-
-        await this.post<any>(endPoint, section);
-    }
-
-    async deleteSection(sectionId: number): Promise<any> {
-        const endPoint = `${endPoints.sections}/${sectionId}`;
-
-        await this.delete(endPoint);
-    }
-
-    //#endregion
-
-    //#region Task methods
-
-    async getTasks(fetchOptions?: TaskFetchOptions): Promise<Task[]> {
-        const response = this.get<Task[]>(
-            endPoints.tasks,
-            fetchOptions);
-
-        return response;
-    }
-
-    async addTask(options: AddTaskOptions): Promise<Task> {
-        if (this.stringIsUndefinedOrEmpty(options.content)) {
-            throw new Error("You must supply content");
-        }
-
-        const response = await this.post<Task>(
-            endPoints.tasks,
-            options
-        );
-
-        return response;
-    }
-
-    async getTask(taskId: number): Promise<Task> {
-        const endPoint = `${endPoints.tasks}/${taskId}`;
-        const response = this.get<Task>(endPoint);
-
-        return response;
-    }
-
-    async updateTask(taskId: number, options: UpdateTaskOptions): Promise<any> {
-        const endPoint = `${endPoints.tasks}/${taskId}`;
-
-        await this.post<any>(endPoint, options);
-    }
-
-    async closeTask(taskId: number): Promise<any> {
-        const endPoint = `${endPoints.tasks}/${taskId}/close`;
-
-        await this.post<any>(endPoint, {});
-    }
-
-    async reopenTask(taskId: number): Promise<any> {
-        const endPoint = `${endPoints.tasks}/${taskId}/reopen`;
-
-        await this.post<any>(endPoint, {});
-    }
-
-    async deleteTask(taskId: number): Promise<any> {
-        const endPoint = `${endPoints.tasks}/${taskId}`;
-
-        await this.delete(endPoint);
-    }
-
-    //#endregion
-
-    //#region Comment methods
-
-    async getTaskComments(taskId: number): Promise<Comment[]> {
-        const endpoint = `${endPoints.comments}?task_id=${taskId}`;
-
-        const response = await this.get<Comment[]>(endpoint);
-
-        return response;
-    }
-
-    async getProjectComments(projectId: number): Promise<Comment[]> {
-        const endpoint = `${endPoints.comments}?project_id=${projectId}`;
-
-        const response = await this.get<Comment[]>(endpoint);
-
-        return response;
-    }
-
-    addTaskComment(taskId: number, options: AddCommentOptions): Promise<Comment> {
-        if (this.stringIsUndefinedOrEmpty(options.content)) {
-            throw new Error("You must supply content for the comment");
-        }
-
-        const data = {
-            task_id: taskId,
-            ...options
-        };
-
-        return this.post<Comment>(endPoints.comments, data);
-    }
-
-    addProjectComment(projectId: number, options: AddCommentOptions): Promise<Comment> {
-        if (this.stringIsUndefinedOrEmpty(options.content)) {
-            throw new Error("You must supply content for the comment");
-        }
-
-        const data = {
-            project_id: projectId,
-            ...options
-        };
-
-        return this.post<Comment>(endPoints.comments, data);
-    }
-
-    getComment(commentId: number): Promise<Comment> {
-        const endpoint = `${endPoints.comments}/${commentId}`;
-
-        return this.get<Comment>(endpoint);
-    }
-
-    updateComment(commentId: number, content: string): Promise<any> {
-        if (this.stringIsUndefinedOrEmpty(content)) {
-            throw new Error("You must supply content for the comment");
-        }
-
-        const endpoint = `${endPoints.comments}/${commentId}`;
-
-        return this.post<any>(endpoint, { content: content });
-    }
-
-    deleteComment(commentId: number): Promise<any> {
-        const endpoint = `${endPoints.comments}/${commentId}`;
-
-        return this.delete(endpoint);
-    }
-
-    //#endregion
-
-    //#region Label methods
-
-    getLabels(): Promise<Label[]> {
-        return this.get<Label[]>(endPoints.labels);
-    }
-
-    createLabel(options: AddLabelOptions): Promise<Label> {
-        return this.post<Label>(endPoints.labels, options);
-    }
-
-    getLabel(labelId: number): Promise<Label> {
-        const endPoint = `${endPoints.labels}/${labelId}`;
-
-        return this.get<Label>(endPoint);
-    }
-
-    updateLabel(labelId: number, options: UpdateLabelOptions): Promise<any> {
-        const endPoint = `${endPoints.labels}/${labelId}`;
-
-        return this.post<any>(endPoint, options);
-    }
-
-    deleteLabel(labelId: number): Promise<any> {
-        const endPoint = `${endPoints.labels}/${labelId}`;
-
-        return this.delete(endPoint);
-    }
-
-    //#endregion
-
-    private checkForAccessToken() {
-        if (this.stringIsUndefinedOrEmpty(this._accessToken)) {
-            throw new Error("No access token set");
-        }
-    }
-
-    private stringIsUndefinedOrEmpty(str?: string): boolean {
-        return str === undefined
-            || str.trim() === "";
-    }
-
-    private async get<T>(
-        endPoint: string,
-        params: {} = {},
-        requiresAuthentication: boolean = true,
-        useSyncApi: boolean = false
-    ): Promise<T> {
-        const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
-        const url = apiUrl + endPoint;
-        const options: ThwackOptions = {
-            params: params
-        };
-
-        if (requiresAuthentication) {
-            this.checkForAccessToken();
-            options.headers = {
-                "Authorization": `Bearer ${this._accessToken}`
-            };
-        }
-
-        const response = await thwack.get(url);
+    let response: ThwackResponse<any>;
+    try {
+        response = await thwack.post(url, data, options);
 
         if (response.status >= 300)
-            throw new Error;
-
-        const body = response.data;
-        return body;
-    }
-
-    private async post<T>(
-        endPoint: string,
-        data: {},
-        requiresAuthentication: boolean = true,
-        useSyncApi: boolean = false
-    ): Promise<T> {
-        const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
-        const url = apiUrl + endPoint;
-        const options: ThwackOptions = {};
-
-        if (requiresAuthentication) {
-            this.checkForAccessToken();
-            options.headers = {
-                "Authorization": `Bearer ${this._accessToken}`
-            };
-        }
-
-        let response: ThwackResponse<any>;
-        try {
-            response = await thwack.post(url, data, options);
-
-            if (response.status >= 300)
-                throw new Error();
-        }
-        catch (e) {
             throw new Error();
-        }
-
-        const body = response.data;
-        return body;
+    }
+    catch (e) {
+        throw new Error();
     }
 
-    private async delete(
-        endPoint: string,
-        requiresAuthentication: boolean = true,
-        useSyncApi: boolean = false
-    ): Promise<any> {
-        const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
-        const url = apiUrl + endPoint;
-        const options: ThwackOptions = {};
+    const body = response.data;
+    return body;
+};
 
-        if (requiresAuthentication) {
-            this.checkForAccessToken();
-            options.headers = {
-                "Authorization": `Bearer ${this._accessToken}`
-            };
-        }
+const deleteCall = async (
+    endPoint: string,
+    requiresAuthentication: boolean = true,
+    useSyncApi: boolean = false
+): Promise<any> => {
+    const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
+    const url = apiUrl + endPoint;
+    const options: ThwackOptions = {};
 
-        const response = await thwack.delete(url, options);
-
-        if (response.status >= 300) {
-            throw new Error;
-        }
+    if (requiresAuthentication) {
+        checkForAccessToken();
+        options.headers = {
+            "Authorization": `Bearer ${_accessToken}`
+        };
     }
-}
+
+    const response = await thwack.delete(url, options);
+
+    if (response.status >= 300) {
+        throw new Error;
+    }
+};
+// }
 
 interface AccessToken {
     access_token: string,
