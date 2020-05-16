@@ -1,4 +1,4 @@
-import thwack, { ThwackRequestEvent, ThwackResponse } from "thwack";
+import thwack, { ThwackRequestEvent } from "thwack";
 
 export const testClientId = "1234";
 export const testClientSecret = "abcd";
@@ -20,4 +20,17 @@ export const setThwackResponseData = (
             }, options);
         }
     })
+};
+
+export const dontCareAboutResponse = () => {
+    thwack.addEventListener('request', (event: ThwackRequestEvent) => {
+        const { options } = event;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        return new thwack.ThwackResponse({
+            status: 200
+        }, options);
+    });
 };

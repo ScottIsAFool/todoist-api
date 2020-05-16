@@ -131,8 +131,13 @@ export const exchangeToken = async (code: string): Promise<string> => {
     return accessToken.access_token;
 };
 
-export const revokeAccessTokens = async (): Promise<any> => {
-    checkForAccessToken();
+export const revokeAccessTokens = (): Promise<any> => {
+    try {
+        checkForAccessToken();
+    }
+    catch{
+        return Promise.reject("No access token set");
+    }
 
     const data = {
         client_id: clientId(),
@@ -140,7 +145,7 @@ export const revokeAccessTokens = async (): Promise<any> => {
         access_token: accessToken()
     }
 
-    await post<any>(
+    return post<any>(
         endPoints.accessTokensRevoke,
         data,
         false,
@@ -505,7 +510,7 @@ const get = async <T>(
     }
 
     if (response.status >= 300)
-        throw new Error;
+        throw new Error();
 
     const body = response.data;
     return body;
@@ -537,7 +542,7 @@ const post = async <T>(
     }
 
     if (response.status >= 300)
-        throw new Error;
+        throw new Error();
 
     const body = response.data;
     return body;
@@ -568,7 +573,7 @@ const deleteCall = async (
     }
 
     if (response.status >= 300) {
-        throw new Error;
+        throw new Error();
     }
 };
 
