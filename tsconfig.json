@@ -63,6 +63,6 @@
     "node_modules",
     "js",
     "**/*.test.ts",
-    "app.ts"
+    "src/app.ts"
   ]
 }

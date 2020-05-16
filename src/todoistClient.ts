@@ -169,18 +169,18 @@ export const createProject = (options: AddProjectOptions): Promise<Project> => {
     );
 };
 
-export const getProject = (projectId: number): Promise<Project> => {
-    if (projectId <= 0) {
+export const getProject = (project_id: number): Promise<Project> => {
+    if (project_id <= 0) {
         throw new Error("Invalid Project ID");
     }
 
-    const endPoint = `${endPoints.projects}/${projectId}`;
+    const endPoint = `${endPoints.projects}/${project_id}`;
 
     return get<Project>(endPoint);
 };
 
-export const updateProject = (projectId: number, options: UpdateProjectOptions): Promise<any> => {
-    if (projectId <= 0) {
+export const updateProject = (project_id: number, options: UpdateProjectOptions): Promise<any> => {
+    if (project_id <= 0) {
         throw new Error("Invalid Project ID");
     }
     if (stringIsUndefinedOrEmpty(options.name) && !options.color) {
@@ -190,17 +190,17 @@ export const updateProject = (projectId: number, options: UpdateProjectOptions):
         throw new Error("Color ID is invalid");
     }
 
-    const endPoint = `${endPoints.projects}/${projectId}`;
+    const endPoint = `${endPoints.projects}/${project_id}`;
 
     return post<any>(endPoint, options);
 };
 
-export const deleteProject = (projectId: number): Promise<any> => {
-    if (projectId <= 0) {
+export const deleteProject = (project_id: number): Promise<any> => {
+    if (project_id <= 0) {
         throw new Error("Invalid Project ID");
     }
 
-    const endPoint = `${endPoints.projects}/${projectId}`;
+    const endPoint = `${endPoints.projects}/${project_id}`;
 
     return deleteCall(endPoint);
 };
@@ -212,13 +212,13 @@ export const getAllSections = (): Promise<Section[]> => {
     return get<Section[]>(endPoints.sections);
 };
 
-export const getProjectSections = (projectId: number): Promise<Section[]> => {
-    if (projectId <= 0) {
-        throw new Error("Invalid projectID");
+export const getProjectSections = (project_id: number): Promise<Section[]> => {
+    if (project_id <= 0) {
+        throw new Error("Invalid project_id");
     }
 
     const data = {
-        project_id: projectId
+        project_id: project_id
     };
 
     return get<Section[]>(endPoints.sections, data);
@@ -235,18 +235,18 @@ export const createSection = (options: AddSectionOptions): Promise<Section> => {
     );
 };
 
-export const getSection = (sectionId: number): Promise<Section> => {
-    if (sectionId <= 0) {
+export const getSection = (section_id: number): Promise<Section> => {
+    if (section_id <= 0) {
         throw new Error("Invalid Section ID");
     }
 
-    const endPoint = `${endPoints.sections}/${sectionId}`;
+    const endPoint = `${endPoints.sections}/${section_id}`;
 
     return get<Section>(endPoint);
 };
 
-export const updateSection = (sectionId: number, options: UpdateSectionOptions): Promise<any> => {
-    if (sectionId <= 0) {
+export const updateSection = (section_id: number, options: UpdateSectionOptions): Promise<any> => {
+    if (section_id <= 0) {
         throw new Error("Invalid Section ID");
     }
 
@@ -254,17 +254,17 @@ export const updateSection = (sectionId: number, options: UpdateSectionOptions):
         throw new Error("You must provide a name");
     }
 
-    const endPoint = `${endPoints.sections}/${sectionId}`;
+    const endPoint = `${endPoints.sections}/${section_id}`;
 
     return post<any>(endPoint, options);
 };
 
-export const deleteSection = (sectionId: number): Promise<any> => {
-    if (sectionId <= 0) {
+export const deleteSection = (section_id: number): Promise<any> => {
+    if (section_id <= 0) {
         throw new Error("Invalid Section ID");
     }
 
-    const endPoint = `${endPoints.sections}/${sectionId}`;
+    const endPoint = `${endPoints.sections}/${section_id}`;
 
     return deleteCall(endPoint);
 };
@@ -302,12 +302,12 @@ export const addTask = (options: AddTaskOptions): Promise<Task> => {
     );
 };
 
-export const getTask = (taskId: number): Promise<Task> => {
-    const endPoint = `${endPoints.tasks}/${taskId}`;
+export const getTask = (task_id: number): Promise<Task> => {
+    const endPoint = `${endPoints.tasks}/${task_id}`;
     return get<Task>(endPoint);
 };
 
-export const updateTask = (taskId: number, options: UpdateTaskOptions): Promise<any> => {
+export const updateTask = (task_id: number, options: UpdateTaskOptions): Promise<any> => {
     const [dueOptionsValid, dueOptionsCount] = hasValidDueOptions(options);
 
     if (dueOptionsValid) {
@@ -318,25 +318,25 @@ export const updateTask = (taskId: number, options: UpdateTaskOptions): Promise<
         throw new Error("Please update either due date, color, content, or labels")
     }
 
-    const endPoint = `${endPoints.tasks}/${taskId}`;
+    const endPoint = `${endPoints.tasks}/${task_id}`;
 
     return post<any>(endPoint, options);
 };
 
-export const closeTask = (taskId: number): Promise<any> => {
-    const endPoint = `${endPoints.tasks}/${taskId}/close`;
+export const closeTask = (task_id: number): Promise<any> => {
+    const endPoint = `${endPoints.tasks}/${task_id}/close`;
 
     return post<any>(endPoint);
 };
 
-export const reopenTask = (taskId: number): Promise<any> => {
-    const endPoint = `${endPoints.tasks}/${taskId}/reopen`;
+export const reopenTask = (task_id: number): Promise<any> => {
+    const endPoint = `${endPoints.tasks}/${task_id}/reopen`;
 
     return post<any>(endPoint);
 };
 
-export const deleteTask = (taskId: number): Promise<any> => {
-    const endPoint = `${endPoints.tasks}/${taskId}`;
+export const deleteTask = (task_id: number): Promise<any> => {
+    const endPoint = `${endPoints.tasks}/${task_id}`;
 
     return deleteCall(endPoint);
 };
@@ -345,62 +345,62 @@ export const deleteTask = (taskId: number): Promise<any> => {
 
 //#region Comment methods
 
-export const getTaskComments = (taskId: number): Promise<Comment[]> => {
-    const endpoint = `${endPoints.comments}?task_id=${taskId}`;
+export const getTaskComments = (task_id: number): Promise<Comment[]> => {
+    const endpoint = `${endPoints.comments}?task_id=${task_id}`;
 
     return get<Comment[]>(endpoint);
 };
 
-export const getProjectComments = (projectId: number): Promise<Comment[]> => {
-    const endpoint = `${endPoints.comments}?project_id=${projectId}`;
+export const getProjectComments = (project_id: number): Promise<Comment[]> => {
+    const endpoint = `${endPoints.comments}?project_id=${project_id}`;
 
     return get<Comment[]>(endpoint);
 };
 
-export const addTaskComment = (taskId: number, options: AddCommentOptions): Promise<Comment> => {
+export const addTaskComment = (task_id: number, options: AddCommentOptions): Promise<Comment> => {
     if (stringIsUndefinedOrEmpty(options.content)) {
         throw new Error("You must supply content for the comment");
     }
 
     const data = {
-        task_id: taskId,
+        task_id: task_id,
         ...options
     };
 
     return post<Comment>(endPoints.comments, data);
 };
 
-export const addProjectComment = (projectId: number, options: AddCommentOptions): Promise<Comment> => {
+export const addProjectComment = (project_id: number, options: AddCommentOptions): Promise<Comment> => {
     if (stringIsUndefinedOrEmpty(options.content)) {
         throw new Error("You must supply content for the comment");
     }
 
     const data = {
-        project_id: projectId,
+        project_id: project_id,
         ...options
     };
 
     return post<Comment>(endPoints.comments, data);
 };
 
-export const getComment = (commentId: number): Promise<Comment> => {
-    const endpoint = `${endPoints.comments}/${commentId}`;
+export const getComment = (comment_id: number): Promise<Comment> => {
+    const endpoint = `${endPoints.comments}/${comment_id}`;
 
     return get<Comment>(endpoint);
 };
 
-export const updateComment = (commentId: number, content: string): Promise<any> => {
+export const updateComment = (comment_id: number, content: string): Promise<any> => {
     if (stringIsUndefinedOrEmpty(content)) {
         throw new Error("You must supply content for the comment");
     }
 
-    const endpoint = `${endPoints.comments}/${commentId}`;
+    const endpoint = `${endPoints.comments}/${comment_id}`;
 
     return post<any>(endpoint, { content: content });
 };
 
-export const deleteComment = (commentId: number): Promise<any> => {
-    const endpoint = `${endPoints.comments}/${commentId}`;
+export const deleteComment = (comment_id: number): Promise<any> => {
+    const endpoint = `${endPoints.comments}/${comment_id}`;
 
     return deleteCall(endpoint);
 };
@@ -424,18 +424,18 @@ export const createLabel = (options: AddLabelOptions): Promise<Label> => {
     return post<Label>(endPoints.labels, options);
 };
 
-export const getLabel = (labelId: number): Promise<Label> => {
-    if (labelId <= 0) {
+export const getLabel = (label_id: number): Promise<Label> => {
+    if (label_id <= 0) {
         throw new Error("Invalid label ID");
     }
 
-    const endPoint = `${endPoints.labels}/${labelId}`;
+    const endPoint = `${endPoints.labels}/${label_id}`;
 
     return get<Label>(endPoint);
 };
 
-export const updateLabel = (labelId: number, options: UpdateLabelOptions): Promise<any> => {
-    if (labelId <= 0) {
+export const updateLabel = (label_id: number, options: UpdateLabelOptions): Promise<any> => {
+    if (label_id <= 0) {
         throw new Error("Invalid label ID");
     }
     if (stringIsUndefinedOrEmpty(options.name) && !options.color && !options.order) {
@@ -445,17 +445,17 @@ export const updateLabel = (labelId: number, options: UpdateLabelOptions): Promi
         throw new Error("Color ID is invalid");
     }
 
-    const endPoint = `${endPoints.labels}/${labelId}`;
+    const endPoint = `${endPoints.labels}/${label_id}`;
 
     return post<any>(endPoint, options);
 };
 
-export const deleteLabel = (labelId: number): Promise<any> => {
-    if (labelId <= 0) {
+export const deleteLabel = (label_id: number): Promise<any> => {
+    if (label_id <= 0) {
         throw new Error("Invalid label ID");
     }
 
-    const endPoint = `${endPoints.labels}/${labelId}`;
+    const endPoint = `${endPoints.labels}/${label_id}`;
 
     return deleteCall(endPoint);
 };
