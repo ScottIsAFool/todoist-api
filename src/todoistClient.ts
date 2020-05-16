@@ -1,12 +1,11 @@
 import * as endPoints from './endpoints';
 
 import { Attachment, Comment, Label, Project, Section, Task } from './entities';
+import { Color, isValidColor } from './colors';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
 import thwack, { ThwackOptions, ThwackResponse } from 'thwack';
 
 import create from '@alcadica/state-manager';
-
-import { Color, isValidColor } from './colors';
 import { scopes } from './scopes';
 
 interface TaskOptionsBase {
@@ -297,7 +296,7 @@ export const addTask = (options: AddTaskOptions): Promise<Task> => {
 
     const [dueOptionsValid] = hasValidDueOptions(options);
 
-    if (dueOptionsValid) {
+    if (!dueOptionsValid) {
         throw new Error("Only set one due_* option to update the due time")
     }
 
@@ -308,14 +307,22 @@ export const addTask = (options: AddTaskOptions): Promise<Task> => {
 };
 
 export const getTask = (task_id: number): Promise<Task> => {
+    if (task_id <= 0) {
+        throw new Error("Invalid task ID");
+    }
+
     const endPoint = `${endPoints.tasks}/${task_id}`;
     return get<Task>(endPoint);
 };
 
 export const updateTask = (task_id: number, options: UpdateTaskOptions): Promise<any> => {
+    if (task_id <= 0) {
+        throw new Error("Invalid task ID");
+    }
+
     const [dueOptionsValid, dueOptionsCount] = hasValidDueOptions(options);
 
-    if (dueOptionsValid) {
+    if (!dueOptionsValid) {
         throw new Error("Only set one due_* option to update the due time")
     }
 
@@ -329,18 +336,30 @@ export const updateTask = (task_id: number, options: UpdateTaskOptions): Promise
 };
 
 export const closeTask = (task_id: number): Promise<any> => {
+    if (task_id <= 0) {
+        throw new Error("Invalid task ID");
+    }
+
     const endPoint = `${endPoints.tasks}/${task_id}/close`;
 
     return post<any>(endPoint);
 };
 
 export const reopenTask = (task_id: number): Promise<any> => {
+    if (task_id <= 0) {
+        throw new Error("Invalid task ID");
+    }
+
     const endPoint = `${endPoints.tasks}/${task_id}/reopen`;
 
     return post<any>(endPoint);
 };
 
 export const deleteTask = (task_id: number): Promise<any> => {
+    if (task_id <= 0) {
+        throw new Error("Invalid task ID");
+    }
+
     const endPoint = `${endPoints.tasks}/${task_id}`;
 
     return deleteCall(endPoint);
@@ -582,7 +601,11 @@ interface AccessToken {
     token_type: string
 };
 
-const hasValidDueOptions = (options: TaskOptionsBase): [boolean, number] => {
+/**
+ * @param options 
+ * @internal
+ */
+export const hasValidDueOptions = (options: TaskOptionsBase): [boolean, number] => {
     let dueOptionsSet = 0;
     if (options.due_date) {
         dueOptionsSet++;
