@@ -1,13 +1,7 @@
 import thwack, { ThwackRequestEvent, ThwackResponse } from "thwack";
 
-import { TodoistClient } from "../src/todoistClient";
-
 export const testClientId = "1234";
 export const testClientSecret = "abcd";
-
-export const getTarget = (): TodoistClient => {
-    return new TodoistClient(testClientSecret, testClientId);
-};
 
 export const setThwackResponseData = (
     endPoint: string,
@@ -26,4 +20,4 @@ export const setThwackResponseData = (
             }, options);
         }
     })
-}
+};

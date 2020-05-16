@@ -6,7 +6,7 @@ import thwack, { ThwackOptions, ThwackResponse } from 'thwack';
 
 import create from '@alcadica/state-manager';
 
-import { Color } from './colors';
+import { Color, isValidColor } from './colors';
 import { scopes } from './scopes';
 
 interface TaskOptionsBase {
@@ -16,7 +16,6 @@ interface TaskOptionsBase {
     due_date?: string,
     due_datetime?: string,
     due_lang?: string,
-    color?: Color
 };
 
 export interface UpdateTaskOptions extends TaskOptionsBase {
@@ -50,14 +49,40 @@ export interface AddCommentOptions {
     attachment?: Attachment
 };
 
-export interface AddLabelOptions {
+interface SectionOptionsBase {
     name: string;
+};
+
+export interface AddSectionOptions extends SectionOptionsBase {
+    project_id: number;
     order?: number;
 };
 
-export interface UpdateLabelOptions {
+export interface UpdateSectionOptions extends SectionOptionsBase {
+};
+
+export interface AddProjectOptions {
+    name: string;
+    parent?: number;
+    color?: Color;
+};
+
+export interface UpdateProjectOptions {
     name?: string;
+    color?: Color;
+};
+
+interface LabelOptionsBase {
     order?: number;
+    color?: Color;
+};
+
+export interface AddLabelOptions extends LabelOptionsBase {
+    name: string;
+};
+
+export interface UpdateLabelOptions extends LabelOptionsBase {
+    name?: string;
 };
 
 interface ClientDetails {
@@ -129,30 +154,52 @@ export const getAllProjects = (): Promise<Project[]> => {
     return get<Project[]>(endPoints.projects);
 };
 
-export const createProject = (project: Project): Promise<Project> => {
-    if (stringIsUndefinedOrEmpty(project.name)) {
+export const createProject = (options: AddProjectOptions): Promise<Project> => {
+    if (stringIsUndefinedOrEmpty(options.name)) {
         throw new Error("Project must have a name");
+    }
+
+    if (options.color && !isValidColor(options.color.id)) {
+        throw new Error("Color ID is invalid");
     }
 
     return post<Project>(
         endPoints.projects,
-        project
+        options
     );
 };
 
 export const getProject = (projectId: number): Promise<Project> => {
+    if (projectId <= 0) {
+        throw new Error("Invalid Project ID");
+    }
+
     const endPoint = `${endPoints.projects}/${projectId}`;
 
     return get<Project>(endPoint);
 };
 
-export const updateProject = (project: Project): Promise<any> => {
-    const endPoint = `${endPoints.projects}/${project.id}`;
+export const updateProject = (projectId: number, options: UpdateProjectOptions): Promise<any> => {
+    if (projectId <= 0) {
+        throw new Error("Invalid Project ID");
+    }
+    if (stringIsUndefinedOrEmpty(options.name) && !options.color) {
+        throw new Error("You must provide either a name or a color to update");
+    }
+    if (options.color && !isValidColor(options.color.id)) {
+        throw new Error("Color ID is invalid");
+    }
 
-    return post<any>(endPoint, project);
+    const endPoint = `${endPoints.projects}/${projectId}`;
+
+    return post<any>(endPoint, options);
 };
 
 export const deleteProject = (projectId: number): Promise<any> => {
+    if (projectId <= 0) {
+        throw new Error("Invalid Project ID");
+    }
+
     const endPoint = `${endPoints.projects}/${projectId}`;
 
     return deleteCall(endPoint);
@@ -177,30 +224,46 @@ export const getProjectSections = (projectId: number): Promise<Section[]> => {
     return get<Section[]>(endPoints.sections, data);
 };
 
-export const createSection = (section: Section): Promise<Section> => {
-    if (stringIsUndefinedOrEmpty(section.name)) {
+export const createSection = (options: AddSectionOptions): Promise<Section> => {
+    if (stringIsUndefinedOrEmpty(options.name)) {
         throw new Error("Section must have a name");
     }
 
     return post<Section>(
         endPoints.sections,
-        section
+        options
     );
 };
 
 export const getSection = (sectionId: number): Promise<Section> => {
+    if (sectionId <= 0) {
+        throw new Error("Invalid Section ID");
+    }
+
     const endPoint = `${endPoints.sections}/${sectionId}`;
 
     return get<Section>(endPoint);
 };
 
-export const updateSection = (section: Section): Promise<any> => {
-    const endPoint = `${endPoints.sections}/${section.id}`;
+export const updateSection = (sectionId: number, options: UpdateSectionOptions): Promise<any> => {
+    if (sectionId <= 0) {
+        throw new Error("Invalid Section ID");
+    }
 
-    return post<any>(endPoint, section);
+    if (stringIsUndefinedOrEmpty(options.name)) {
+        throw new Error("You must provide a name");
+    }
+
+    const endPoint = `${endPoints.sections}/${sectionId}`;
+
+    return post<any>(endPoint, options);
 };
 
 export const deleteSection = (sectionId: number): Promise<any> => {
+    if (sectionId <= 0) {
+        throw new Error("Invalid Section ID");
+    }
+
     const endPoint = `${endPoints.sections}/${sectionId}`;
 
     return deleteCall(endPoint);
@@ -210,15 +273,27 @@ export const deleteSection = (sectionId: number): Promise<any> => {
 
 //#region Task methods
 
-export const getTasks = (fetchOptions?: TaskFetchOptions): Promise<Task[]> => {
+export const getTasks = (options?: TaskFetchOptions): Promise<Task[]> => {
+    if (options) {
+        if ((options.label_id || options.project_id) && options.filter) {
+            throw new Error("You may provide a label id and/or project id, or a filter name");
+        }
+    }
+
     return get<Task[]>(
         endPoints.tasks,
-        fetchOptions);
+        options);
 };
 
 export const addTask = (options: AddTaskOptions): Promise<Task> => {
     if (stringIsUndefinedOrEmpty(options.content)) {
         throw new Error("You must supply content");
+    }
+
+    const [dueOptionsValid] = hasValidDueOptions(options);
+
+    if (dueOptionsValid) {
+        throw new Error("Only set one due_* option to update the due time")
     }
 
     return post<Task>(
@@ -229,9 +304,7 @@ export const addTask = (options: AddTaskOptions): Promise<Task> => {
 
 export const getTask = (taskId: number): Promise<Task> => {
     const endPoint = `${endPoints.tasks}/${taskId}`;
-    const response = get<Task>(endPoint);
-
-    return response;
+    return get<Task>(endPoint);
 };
 
 export const updateTask = (taskId: number, options: UpdateTaskOptions): Promise<any> => {
@@ -241,7 +314,7 @@ export const updateTask = (taskId: number, options: UpdateTaskOptions): Promise<
         throw new Error("Only set one due_* option to update the due time")
     }
 
-    if (dueOptionsCount === 0 && !options.color && !options.content && !options.label_ids) {
+    if (dueOptionsCount === 0 && !options.content && !options.label_ids) {
         throw new Error("Please update either due date, color, content, or labels")
     }
 
@@ -253,13 +326,13 @@ export const updateTask = (taskId: number, options: UpdateTaskOptions): Promise<
 export const closeTask = (taskId: number): Promise<any> => {
     const endPoint = `${endPoints.tasks}/${taskId}/close`;
 
-    return post<any>(endPoint, {});
+    return post<any>(endPoint);
 };
 
 export const reopenTask = (taskId: number): Promise<any> => {
     const endPoint = `${endPoints.tasks}/${taskId}/reopen`;
 
-    return post<any>(endPoint, {});
+    return post<any>(endPoint);
 };
 
 export const deleteTask = (taskId: number): Promise<any> => {
@@ -341,22 +414,47 @@ export const getLabels = (): Promise<Label[]> => {
 };
 
 export const createLabel = (options: AddLabelOptions): Promise<Label> => {
+    if (stringIsUndefinedOrEmpty(options.name)) {
+        throw new Error("You must provide a name for the label");
+    }
+    if (options.color && !isValidColor(options.color.id)) {
+        throw new Error("Color ID is invalid");
+    }
+
     return post<Label>(endPoints.labels, options);
 };
 
 export const getLabel = (labelId: number): Promise<Label> => {
+    if (labelId <= 0) {
+        throw new Error("Invalid label ID");
+    }
+
     const endPoint = `${endPoints.labels}/${labelId}`;
 
     return get<Label>(endPoint);
 };
 
 export const updateLabel = (labelId: number, options: UpdateLabelOptions): Promise<any> => {
+    if (labelId <= 0) {
+        throw new Error("Invalid label ID");
+    }
+    if (stringIsUndefinedOrEmpty(options.name) && !options.color && !options.order) {
+        throw new Error("You must provide either a name, color or order to update the label");
+    }
+    if (options.color && !isValidColor(options.color.id)) {
+        throw new Error("Color ID is invalid");
+    }
+
     const endPoint = `${endPoints.labels}/${labelId}`;
 
     return post<any>(endPoint, options);
 };
 
 export const deleteLabel = (labelId: number): Promise<any> => {
+    if (labelId <= 0) {
+        throw new Error("Invalid label ID");
+    }
+
     const endPoint = `${endPoints.labels}/${labelId}`;
 
     return deleteCall(endPoint);
@@ -398,7 +496,13 @@ const get = async <T>(
         };
     }
 
-    const response = await thwack.get(url);
+    let response: ThwackResponse<any>;
+    try {
+        response = await thwack.get(url);
+    }
+    catch (e) {
+        throw new Error();
+    }
 
     if (response.status >= 300)
         throw new Error;
@@ -409,7 +513,7 @@ const get = async <T>(
 
 const post = async <T>(
     endPoint: string,
-    data: {},
+    data: {} = {},
     requiresAuthentication: boolean = true,
     useSyncApi: boolean = false
 ): Promise<T> => {
@@ -427,13 +531,13 @@ const post = async <T>(
     let response: ThwackResponse<any>;
     try {
         response = await thwack.post(url, data, options);
-
-        if (response.status >= 300)
-            throw new Error();
     }
     catch (e) {
         throw new Error();
     }
+
+    if (response.status >= 300)
+        throw new Error;
 
     const body = response.data;
     return body;
@@ -455,7 +559,13 @@ const deleteCall = async (
         };
     }
 
-    const response = await thwack.delete(url, options);
+    let response: ThwackResponse<any>;
+    try {
+        response = await thwack.delete(url, options);
+    }
+    catch (e) {
+        throw new Error();
+    }
 
     if (response.status >= 300) {
         throw new Error;

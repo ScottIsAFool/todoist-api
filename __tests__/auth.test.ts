@@ -1,17 +1,17 @@
 import * as endPoints from '../src/endpoints';
 
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from '../src/consts';
-import { getTarget, setThwackResponseData } from "../tests/testConfigs";
+import { setThwackResponseData } from "../tests/testConfigs";
+import * as todoistClient from '../src/todoistClient';
 
 import { scopes } from '../src/scopes';
 
 test("ensures get auth url is correct", () => {
-    const target = getTarget();
     const scopesList = [scopes.taskAdd, scopes.dataRead];
     const state = "kwijibo";
     const expectedUrl = "https://todoist.com/oauth/authorize?client_id=1234&scope=task:add,data:read&state=kwijibo";
 
-    expect(target.getAuthUrl(scopesList, state))
+    expect(todoistClient.getAuthUrl(scopesList, state))
         .toBe(expectedUrl);
 });
 
@@ -26,14 +26,12 @@ test("checks the token exchange", async () => {
         }
     );
 
-    const target = getTarget();
-    const token = await target.exchangeToken(code);
+    const token = await todoistClient.exchangeToken(code);
     expect(token).toBe(expectedToken);
 });
 
 test.each([200, 204])("checks the token revokation", async (status: number) => {
-    const target = getTarget();
-    target.setAccessToken("abcd");
+    todoistClient.setAccessToken("abcd");
 
     setThwackResponseData(
         baseSyncUrl + endPoints.accessTokensRevoke,
@@ -43,7 +41,7 @@ test.each([200, 204])("checks the token revokation", async (status: number) => {
 
     let error: Error | undefined;
     try {
-        await target.revokeAccessTokens();
+        await todoistClient.revokeAccessTokens();
     }
     catch (e) {
         error = e;
@@ -53,11 +51,9 @@ test.each([200, 204])("checks the token revokation", async (status: number) => {
 });
 
 test("checks token revokation throws if no token set", async () => {
-    const target = getTarget();
-
     let error: Error | undefined;
     try {
-        await target.revokeAccessTokens();
+        await todoistClient.revokeAccessTokens();
     }
     catch (e) {
         error = e;
@@ -67,8 +63,7 @@ test("checks token revokation throws if no token set", async () => {
 });
 
 test("checks token revokation throws if not 2xx status", async () => {
-    const target = getTarget();
-    target.setAccessToken("abcd");
+    todoistClient.setAccessToken("abcd");
 
     setThwackResponseData(
         baseSyncUrl + endPoints.accessTokensRevoke,
@@ -78,7 +73,7 @@ test("checks token revokation throws if not 2xx status", async () => {
 
     let error: Error | undefined = undefined;
     try {
-        await target.revokeAccessTokens();
+        await todoistClient.revokeAccessTokens();
     }
     catch (e) {
         error = e;
