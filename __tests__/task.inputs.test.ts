@@ -1,7 +1,6 @@
 import * as todoistClient from '../src/todoistClient';
 
-import { dontCareAboutResponse, setThwackResponseData } from "../tests/testConfigs";
-import thwack, { ThwackErrorEvent } from 'thwack';
+import { dontCareAboutResponse } from "../tests/testConfigs";
 
 describe("Test the inputs for the task methods", () => {
     beforeAll(() => {
@@ -83,6 +82,7 @@ describe("Test the inputs for the task methods", () => {
                             error: "You must supply content"
                         });
                     });
+                expect.assertions(1);
             });
 
         test("Content not empty, no error thrown", () => {
@@ -100,6 +100,7 @@ describe("Test the inputs for the task methods", () => {
                     error: "Only set one due_* option to update the due time"
                 })
             });
+            expect.assertions(1);
         });
     });
 
@@ -112,6 +113,7 @@ describe("Test the inputs for the task methods", () => {
                             error: "Invalid task ID"
                         });
                     });
+                expect.assertions(1);
             });
 
         test("Valid task id doesn't throw error", () => {
@@ -131,6 +133,7 @@ describe("Test the inputs for the task methods", () => {
                             error: "Invalid task ID"
                         });
                     });
+                expect.assertions(1);
             });
 
         test("Valid task id doesn't throw error", () => {
@@ -149,6 +152,7 @@ describe("Test the inputs for the task methods", () => {
                     error: "Only set one due_* option to update the due time"
                 })
             });
+            expect.assertions(1);
         });
 
         test("No options set throws error", () => {
@@ -158,6 +162,7 @@ describe("Test the inputs for the task methods", () => {
                         error: "Please update either due date, color, content, or labels"
                     });
                 });
+            expect.assertions(1);
         });
     });
 
@@ -170,6 +175,7 @@ describe("Test the inputs for the task methods", () => {
                             error: "Invalid task ID"
                         });
                     });
+                expect.assertions(1);
             });
 
         test("Valid task id doesn't throw error", () => {
@@ -189,6 +195,7 @@ describe("Test the inputs for the task methods", () => {
                             error: "Invalid task ID"
                         });
                     });
+                expect.assertions(1);
             });
 
         test("Valid task id doesn't throw error", () => {
@@ -208,6 +215,7 @@ describe("Test the inputs for the task methods", () => {
                             error: "Invalid task ID"
                         });
                     });
+                expect.assertions(1);
             });
 
         test("Valid task id doesn't throw error", async () => {

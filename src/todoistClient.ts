@@ -1,11 +1,12 @@
 import * as endPoints from './endpoints';
 
 import { Attachment, Comment, Label, Project, Section, Task } from './entities';
-import { Color, isValidColor } from './colors';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
 import thwack, { ThwackOptions, ThwackResponse } from 'thwack';
 
+import { Color } from './colors';
 import create from '@alcadica/state-manager';
+import { isValidColor } from './colors';
 import { scopes } from './scopes';
 
 interface TaskOptionsBase {
@@ -158,7 +159,7 @@ export const getAllProjects = (): Promise<Project[]> => {
     return get<Project[]>(endPoints.projects);
 };
 
-export const createProject = (options: AddProjectOptions): Promise<Project> => {
+export const addProject = (options: AddProjectOptions): Promise<Project> => {
     if (stringIsUndefinedOrEmpty(options.name)) {
         throw new Error("Project must have a name");
     }
@@ -187,8 +188,11 @@ export const updateProject = (project_id: number, options: UpdateProjectOptions)
     if (project_id <= 0) {
         throw new Error("Invalid Project ID");
     }
-    if (stringIsUndefinedOrEmpty(options.name) && !options.color) {
+    if (!options.name && !options.color) {
         throw new Error("You must provide either a name or a color to update");
+    }
+    if (options.name && stringIsUndefinedOrEmpty(options.name)) {
+        throw new Error("Project name cannot be empty or undefined");
     }
     if (options.color && !isValidColor(options.color.id)) {
         throw new Error("Color ID is invalid");
