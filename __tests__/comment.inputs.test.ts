@@ -67,95 +67,97 @@ describe("Input tests for comment methods", () => {
 
         describe("Tests for addTaskComment methods", () => {
             test.each([-1, 0])
-                ("Invalid task id throws error", (id: number) => {
-                    todoistClient.addTaskComment(id, { content: "kwijibo" })
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "Invalid Task ID"
-                            });
-                        });
+                ("Invalid task id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.addTaskComment(id, { content: "kwijibo" });
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid Task ID"));
+                    }
                     expect.assertions(1);
                 });
 
             test.each(["", " "])
-                ("Empty content, throws Error", (content: string) => {
-                    todoistClient.addTaskComment(1, { content: content })
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "You must supply content for the comment"
-                            });
-                        });
+                ("Empty content, throws Error", async (content: string) => {
+                    try {
+                        await todoistClient.addTaskComment(1, { content: content });
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("You must supply content for the comment"));
+                    }
+                    expect.assertions(1);
                 });
         });
 
         describe("Tests for addProjectComment methods", () => {
             test.each([-1, 0])
-                ("Invalid project id throws error", (id: number) => {
-                    todoistClient.addProjectComment(id, { content: "kwijibo" })
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "Invalid Project ID"
-                            });
-                        });
+                ("Invalid project id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.addProjectComment(id, { content: "kwijibo" });
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid Project ID"));
+                    }
                     expect.assertions(1);
                 });
 
             test.each(["", " "])
-                ("Empty content, throws Error", (content: string) => {
-                    todoistClient.addProjectComment(1, { content: content })
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "You must supply content for the comment"
-                            });
-                        });
+                ("Empty content, throws Error", async (content: string) => {
+                    try {
+                        await todoistClient.addProjectComment(1, { content: content });
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("You must supply content for the comment"));
+                    }
+                    expect.assertions(1);
                 });
         });
 
         describe("Tests for getComment", () => {
             test.each([-1, 0])
-                ("Invalid comment id throws error", (id: number) => {
-                    todoistClient.getComment(id)
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "Invalid Comment ID"
-                            });
-                        });
+                ("Invalid comment id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.getComment(id);
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid Comment ID"));
+                    }
                     expect.assertions(1);
                 });
         });
 
         describe("Tests for updateComment", () => {
             test.each([-1, 0])
-                ("Invalid comment id throws error", (id: number) => {
-                    todoistClient.updateComment(id, {})
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "Invalid Comment ID"
-                            });
-                        });
+                ("Invalid comment id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.updateComment(id, {});
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid Comment ID"));
+                    }
                     expect.assertions(1);
                 });
 
             test.each(["", " "])
-                ("Empty content, throws Error", (content: string) => {
-                    todoistClient.updateComment(1, { content: content })
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "You must supply content for the comment"
-                            });
-                        });
+                ("Empty content, throws Error", async (content: string) => {
+                    try {
+                        await todoistClient.updateComment(1, { content: content });
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("You must supply content for the comment"));
+                    }
                 });
         });
 
         describe("Tests for deleteComment", () => {
             test.each([-1, 0])
-                ("Invalid comment id throws error", (id: number) => {
-                    todoistClient.deleteComment(id)
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "Invalid Comment ID"
-                            });
-                        });
+                ("Invalid comment id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.deleteComment(id);
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid Comment ID"));
+                    }
                     expect.assertions(1);
                 });
         });

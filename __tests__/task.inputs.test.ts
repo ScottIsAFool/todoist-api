@@ -8,218 +8,205 @@ describe("Test the inputs for the task methods", () => {
         dontCareAboutResponse();
     });
 
-    describe("Tests for getTasks", () => {
+    describe("Happy path tests", () => {
+        test("deleteTask: Valid task id doesn't throw error", () => {
+            return todoistClient.deleteTask(1);
+        });
+
+        test("reopenTask: Valid task id doesn't throw error", () => {
+            return todoistClient.reopenTask(1);
+        });
+
+        test("closeTask: Valid task id doesn't throw error", () => {
+            return todoistClient.closeTask(1);
+        });
+
+        test("updateTask: Valid task id doesn't throw error", () => {
+            return todoistClient.updateTask(1, { content: "kwijibo" });
+        });
+
+        test("getTask: Valid task id doesn't throw error", () => {
+            return todoistClient.getTask(1);
+        });
+        test("addTask: Content not empty, no error thrown", () => {
+            return todoistClient.addTask({ content: "kwijibo" });
+        });
+
         test("getTasks: no options, no Error", () => {
-            todoistClient.getTasks().catch(e => {
-                expect(e).toBeUndefined();
-            });
+            return todoistClient.getTasks();
         });
 
         test("getTasks: label_id set, no Error", () => {
-            todoistClient.getTasks({
+            return todoistClient.getTasks({
                 label_id: 1234
-            }).catch(e => {
-                expect(e).toBeUndefined();
             });
         });
 
         test("getTasks: project_id set, no Error", () => {
-            todoistClient.getTasks({
+            return todoistClient.getTasks({
                 project_id: 1234
-            }).catch(e => {
-                expect(e).toBeUndefined();
             });
         });
 
         test("getTasks: label_id and project_id set, no Error", () => {
-            todoistClient.getTasks({
+            return todoistClient.getTasks({
                 label_id: 1234,
                 project_id: 1234
-            }).catch(e => {
-                expect(e).toBeUndefined();
             });
         });
 
         test("getTasks: filter set, no Error", () => {
-            todoistClient.getTasks({
+            return todoistClient.getTasks({
                 filter: "today"
-            }).catch(e => {
-                expect(e).toBeUndefined();
-            });
-        });
-
-        test("getTasks: filter, label_id set, Error thrown", async () => {
-            // expect.assertions(1);
-            await expect(todoistClient.getTasks({
-                filter: "today",
-                label_id: 1234
-            })).rejects.toThrowError("You may provide a label id and/or project id, or a filter name");
-            // .toEqual({
-            //     error: "You may provide a label id and/or project id, or a filter name"
-            // });
-            // });
-        });
-
-        test("getTasks: filter, project_id set, Error thrown", () => {
-            expect.assertions(1);
-            todoistClient.getTasks({
-                filter: "today",
-                project_id: 1234
-            }).catch(e => {
-                expect(e).toEqual({
-                    error: "You may provide a label id and/or project id, or a filter name"
-                });
             });
         });
     });
 
-    describe("Tests for addTask", () => {
-        test.each(["", " "])("Content is empty, throws error",
-            (content: string) => {
-                todoistClient.addTask({ content: content })
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "You must supply content"
-                        });
-                    });
+    describe("Unhappy path tests", () => {
+        describe("Tests for getTasks", () => {
+            test("getTasks: filter, label_id set, Error thrown", async () => {
                 expect.assertions(1);
+                try {
+                    await todoistClient.getTasks({
+                        filter: "today",
+                        label_id: 1234
+                    });
+                }
+                catch (e) {
+                    expect(e).toEqual(new Error("You may provide a label id and/or project id, or a filter name"));
+                }
             });
 
-        test("Content not empty, no error thrown", () => {
-            todoistClient.addTask({ content: "kwijibo" })
-                .then(task => expect(task).not.toBeUndefined());
+            test("getTasks: filter, project_id set, Error thrown", async () => {
+                expect.assertions(1);
+                try {
+                    await todoistClient.getTasks({
+                        filter: "today",
+                        project_id: 1234
+                    });
+                }
+                catch (e) {
+                    expect(e).toEqual(new Error("You may provide a label id and/or project id, or a filter name"));
+                }
+            });
         });
 
-        test("Invalid due dates throws error", () => {
-            todoistClient.addTask({
-                content: "kwijibo",
-                due_date: "date",
-                due_string: "next monday"
-            }).catch(e => {
-                expect(e).toEqual({
-                    error: "Only set one due_* option to update the due time"
-                })
-            });
-            expect.assertions(1);
-        });
-    });
+        describe("Tests for addTask", () => {
+            test.each(["", " "])("Content is empty, throws error",
+                async (content: string) => {
+                    try {
+                        await todoistClient.addTask({ content: content });
+                    }
 
-    describe("Tests for getTask", () => {
-        test.each([-1, 0])
-            ("Invalid task id throws error", (id: number) => {
-                todoistClient.getTask(id)
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "Invalid task ID"
-                        });
+                    catch (e) {
+
+                        expect(e).toEqual(new Error("You must supply content"));
+                    }
+                    expect.assertions(1);
+                });
+
+            test("Invalid due dates throws error", async () => {
+                try {
+                    await todoistClient.addTask({
+                        content: "kwijibo",
+                        due_date: "date",
+                        due_string: "next monday"
                     });
+                }
+                catch (e) {
+                    expect(e).toEqual(new Error("Only set one due_* option to update the due time"));
+                }
                 expect.assertions(1);
             });
+        });
 
-        test("Valid task id doesn't throw error", () => {
-            todoistClient.getTask(1)
-                .then(task => {
-                    expect(task).not.toBeUndefined();
+        describe("Tests for getTask", () => {
+            test.each([-1, 0])
+                ("Invalid task id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.getTask(id);
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid task ID"));
+                    }
+                    expect.assertions(1);
                 });
         });
-    });
 
-    describe("Tests for updateTask", () => {
-        test.each([-1, 0])
-            ("Invalid task id throws error", (id: number) => {
-                todoistClient.updateTask(id, {})
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "Invalid task ID"
-                        });
+        describe("Tests for updateTask", () => {
+            test.each([-1, 0])
+                ("Invalid task id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.updateTask(id, {});
+                    }
+                    catch (e) {
+
+                        expect(e).toEqual(new Error("Invalid task ID"));
+                    }
+                    expect.assertions(1);
+                });
+
+            test("Invalid due dates throws error", async () => {
+                try {
+                    await todoistClient.updateTask(1, {
+                        due_date: "date",
+                        due_string: "next monday"
                     });
+                }
+                catch (e) {
+                    expect(e).toEqual(new Error("Only set one due_* option to update the due time"));
+                }
                 expect.assertions(1);
             });
 
-        test("Valid task id doesn't throw error", () => {
-            todoistClient.updateTask(1, { content: "kwijibo" })
-                .then(task => {
-                    expect(task).not.toBeUndefined();
-                });
-        });
-
-        test("Invalid due dates throws error", () => {
-            todoistClient.updateTask(1, {
-                due_date: "date",
-                due_string: "next monday"
-            }).catch(e => {
-                expect(e).toEqual({
-                    error: "Only set one due_* option to update the due time"
-                })
-            });
-            expect.assertions(1);
-        });
-
-        test("No options set throws error", () => {
-            todoistClient.updateTask(1, {})
-                .catch(e => {
-                    expect(e).toEqual({
-                        error: "Please update either due date, color, content, or labels"
-                    });
-                });
-            expect.assertions(1);
-        });
-    });
-
-    describe("closeTask tests", () => {
-        test.each([-1, 0])
-            ("Invalid task id throws error", (id: number) => {
-                todoistClient.closeTask(id)
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "Invalid task ID"
-                        });
-                    });
+            test("No options set throws error", async () => {
+                try {
+                    await todoistClient.updateTask(1, {});
+                }
+                catch (e) {
+                    expect(e).toEqual(new Error("Please update either due date, color, content, or labels"));
+                }
                 expect.assertions(1);
             });
+        });
 
-        test("Valid task id doesn't throw error", () => {
-            todoistClient.closeTask(1)
-                .then(task => {
-                    expect(task).not.toBeUndefined();
+        describe("closeTask tests", () => {
+            test.each([-1, 0])
+                ("Invalid task id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.closeTask(id);
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid task ID"));
+                    }
+                    expect.assertions(1);
                 });
         });
-    });
 
-    describe("reopenTask tests", () => {
-        test.each([-1, 0])
-            ("Invalid task id throws error", (id: number) => {
-                todoistClient.reopenTask(id)
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "Invalid task ID"
-                        });
-                    });
-                expect.assertions(1);
-            });
-
-        test("Valid task id doesn't throw error", () => {
-            todoistClient.reopenTask(1)
-                .then(task => {
-                    expect(task).not.toBeUndefined();
+        describe("reopenTask tests", () => {
+            test.each([-1, 0])
+                ("Invalid task id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.reopenTask(id);
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid task ID"));
+                    }
+                    expect.assertions(1);
                 });
         });
-    });
 
-    describe("deleteTask tests", () => {
-        test.each([-1, 0])
-            ("Invalid task id throws error", (id: number) => {
-                todoistClient.deleteTask(id)
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "Invalid task ID"
-                        });
-                    });
-                expect.assertions(1);
-            });
-
-        test("Valid task id doesn't throw error", async () => {
-            await expect(todoistClient.deleteTask(1)).resolves.not.toThrowError();
+        describe("deleteTask tests", () => {
+            test.each([-1, 0])
+                ("Invalid task id throws error", async (id: number) => {
+                    try {
+                        await todoistClient.deleteTask(id);
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid task ID"));
+                    }
+                    expect.assertions(1);
+                });
         });
     });
 });

@@ -1,10 +1,10 @@
 import * as endPoints from '../src/endpoints';
-
-import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from '../src/consts';
-import { setThwackResponseData } from "../tests/testConfigs";
 import * as todoistClient from '../src/todoistClient';
 
+import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from '../src/consts';
+
 import { scopes } from '../src/scopes';
+import { setThwackResponseData } from "../tests/testConfigs";
 
 describe("authentication tests", () => {
     beforeAll(() => {
@@ -35,38 +35,44 @@ describe("authentication tests", () => {
         expect(token).toBe(expectedToken);
     });
 
-    test.each([200, 204])("checks the token revokation", (status: number) => {
-        todoistClient.setAccessToken("abcd");
+    test.each([200, 204])("checks the token revokation succeeds with the right status",
+        (status: number) => {
+            todoistClient.setAccessToken("abcd");
 
-        setThwackResponseData(
-            baseSyncUrl + endPoints.accessTokensRevoke,
-            {},
-            status
-        );
+            setThwackResponseData(
+                baseSyncUrl + endPoints.accessTokensRevoke,
+                {},
+                status
+            );
 
-        todoistClient.revokeAccessTokens()
-            .catch(e => expect(e).toBeUndefined());
-    });
+            return todoistClient.revokeAccessTokens();
+        });
 
     test("checks token revokation throws if no token set", async () => {
-        expect.assertions(1);
         try {
             await todoistClient.revokeAccessTokens()
         }
         catch (e) {
             expect(e).toEqual(new Error("No access token set"));
         }
+        expect.assertions(1);
     });
 
-    // test("checks token revokation throws if not 2xx status", async () => {
-    //     todoistClient.setAccessToken("abcd");
+    test("checks token revokation throws if not 2xx status", async () => {
+        todoistClient.setAccessToken("abcd");
 
-    //     setThwackResponseData(
-    //         baseSyncUrl + endPoints.accessTokensRevoke,
-    //         {},
-    //         403
-    //     );
+        setThwackResponseData(
+            baseSyncUrl + endPoints.accessTokensRevoke,
+            {},
+            403
+        );
 
-    //     await expect(todoistClient.revokeAccessTokens()).rejects.toThrowError();
-    // });
+        try {
+            await todoistClient.revokeAccessTokens();
+        }
+        catch (e) {
+            expect(e).toEqual(new Error());
+        }
+        expect.assertions(1);
+    });
 });
