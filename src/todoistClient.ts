@@ -222,7 +222,7 @@ export const getAllSections = (): Promise<Section[]> => {
 
 export const getProjectSections = (project_id: number): Promise<Section[]> => {
     if (project_id <= 0) {
-        throw new Error("Invalid project_id");
+        throw new Error("Invalid Project ID");
     }
 
     const data = {
@@ -232,9 +232,13 @@ export const getProjectSections = (project_id: number): Promise<Section[]> => {
     return get<Section[]>(endPoints.sections, data);
 };
 
-export const createSection = (options: AddSectionOptions): Promise<Section> => {
+export const addSection = (options: AddSectionOptions): Promise<Section> => {
     if (stringIsUndefinedOrEmpty(options.name)) {
         throw new Error("Section must have a name");
+    }
+
+    if (options.project_id <= 0) {
+        throw new Error("Invalid Project ID");
     }
 
     return post<Section>(
@@ -259,7 +263,7 @@ export const updateSection = (section_id: number, options: UpdateSectionOptions)
     }
 
     if (stringIsUndefinedOrEmpty(options.name)) {
-        throw new Error("You must provide a name");
+        throw new Error("You must provide a section name");
     }
 
     const endPoint = `${endPoints.sections}/${section_id}`;
