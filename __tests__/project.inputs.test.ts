@@ -2,6 +2,7 @@ import * as todoistClient from '../src/todoistClient';
 
 import { berryRed } from '../src/colors';
 import { dontCareAboutResponse } from "../tests/testConfigs";
+import { invalidColor } from '../tests/colorTestData';
 
 describe("Test the inputs for the project methods", () => {
     beforeAll(() => {
@@ -64,7 +65,7 @@ describe("Test the inputs for the project methods", () => {
             test("color set, but not valid", () => {
                 todoistClient.addProject({
                     name: "kwijibo",
-                    color: { name: "a", id: 28, value: "" }
+                    color: invalidColor
                 }).catch(e => {
                     expect(e).toEqual({
                         error: "Color ID is invalid"
@@ -123,7 +124,7 @@ describe("Test the inputs for the project methods", () => {
 
             test("color is set, but is invalid, Error thrown", () => {
                 todoistClient.updateProject(1, {
-                    color: { name: "a", id: 28, value: "" }
+                    color: invalidColor
                 }).catch(e => {
                     expect(e).toEqual({
                         error: "Color ID is invalid"

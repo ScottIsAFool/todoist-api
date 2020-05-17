@@ -474,7 +474,7 @@ export const getLabels = (): Promise<Label[]> => {
     return get<Label[]>(endPoints.labels);
 };
 
-export const createLabel = (options: AddLabelOptions): Promise<Label> => {
+export const addLabel = (options: AddLabelOptions): Promise<Label> => {
     if (stringIsUndefinedOrEmpty(options.name)) {
         throw new Error("You must provide a name for the label");
     }
@@ -499,8 +499,11 @@ export const updateLabel = (label_id: number, options: UpdateLabelOptions): Prom
     if (label_id <= 0) {
         throw new Error("Invalid label ID");
     }
-    if (stringIsUndefinedOrEmpty(options.name) && !options.color && !options.order) {
+    if (!options.name && !options.color && !options.order) {
         throw new Error("You must provide either a name, color or order to update the label");
+    }
+    if (options.name && stringIsUndefinedOrEmpty(options.name)) {
+        throw new Error("You must provide a valid name in order to update");
     }
     if (options.color && !isValidColor(options.color.id)) {
         throw new Error("Color ID is invalid");

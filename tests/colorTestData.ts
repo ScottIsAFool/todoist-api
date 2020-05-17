@@ -1,3 +1,5 @@
+import { Color } from "../src/colors";
+
 export interface ColorData {
     id: number,
     value: string
@@ -26,4 +28,6 @@ export const colorTestData = (): ColorData[] => {
         { id: 48, value: "#b8b8b8" },
         { id: 49, value: "#ccac93" }
     ];
-}
+};
+
+export const invalidColor: Color = { name: "a", id: 28, value: "" };
