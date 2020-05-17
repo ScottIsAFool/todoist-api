@@ -49,6 +49,10 @@ export interface AddCommentOptions {
     attachment?: Attachment
 };
 
+export interface UpdateCommentOptions {
+    content?: string;
+};
+
 interface SectionOptionsBase {
     name: string;
 };
@@ -378,18 +382,29 @@ export const deleteTask = (task_id: number): Promise<any> => {
 //#region Comment methods
 
 export const getTaskComments = (task_id: number): Promise<Comment[]> => {
+    if (task_id <= 0) {
+        throw new Error("Invalid Task ID");
+    }
+
     const endpoint = `${endPoints.comments}?task_id=${task_id}`;
 
     return get<Comment[]>(endpoint);
 };
 
 export const getProjectComments = (project_id: number): Promise<Comment[]> => {
+    if (project_id <= 0) {
+        throw new Error("Invalid Project ID");
+    }
+
     const endpoint = `${endPoints.comments}?project_id=${project_id}`;
 
     return get<Comment[]>(endpoint);
 };
 
 export const addTaskComment = (task_id: number, options: AddCommentOptions): Promise<Comment> => {
+    if (task_id <= 0) {
+        throw new Error("Invalid Task ID");
+    }
     if (stringIsUndefinedOrEmpty(options.content)) {
         throw new Error("You must supply content for the comment");
     }
@@ -403,6 +418,9 @@ export const addTaskComment = (task_id: number, options: AddCommentOptions): Pro
 };
 
 export const addProjectComment = (project_id: number, options: AddCommentOptions): Promise<Comment> => {
+    if (project_id <= 0) {
+        throw new Error("Invalid Project ID");
+    }
     if (stringIsUndefinedOrEmpty(options.content)) {
         throw new Error("You must supply content for the comment");
     }
@@ -416,22 +434,33 @@ export const addProjectComment = (project_id: number, options: AddCommentOptions
 };
 
 export const getComment = (comment_id: number): Promise<Comment> => {
+    if (comment_id <= 0) {
+        throw new Error("Invalid Comment ID");
+    }
+
     const endpoint = `${endPoints.comments}/${comment_id}`;
 
     return get<Comment>(endpoint);
 };
 
-export const updateComment = (comment_id: number, content: string): Promise<any> => {
-    if (stringIsUndefinedOrEmpty(content)) {
+export const updateComment = (comment_id: number, options: UpdateCommentOptions): Promise<any> => {
+    if (comment_id <= 0) {
+        throw new Error("Invalid Comment ID");
+    }
+    if (stringIsUndefinedOrEmpty(options.content)) {
         throw new Error("You must supply content for the comment");
     }
 
     const endpoint = `${endPoints.comments}/${comment_id}`;
 
-    return post<any>(endpoint, { content: content });
+    return post<any>(endpoint, options);
 };
 
 export const deleteComment = (comment_id: number): Promise<any> => {
+    if (comment_id <= 0) {
+        throw new Error("Invalid Comment ID");
+    }
+
     const endpoint = `${endPoints.comments}/${comment_id}`;
 
     return deleteCall(endpoint);

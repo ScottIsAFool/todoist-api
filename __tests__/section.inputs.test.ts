@@ -52,15 +52,16 @@ describe("Test the inputs for the section methods", () => {
         });
 
         describe("addSection Tests", () => {
-            test("name is empty, throws Error", () => {
-                todoistClient.addSection({ name: "", project_id: 1 })
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "Section must have a name"
+            test.each(["", " "])
+                ("name is empty, throws Error", (name: string) => {
+                    todoistClient.addSection({ name: name, project_id: 1 })
+                        .catch(e => {
+                            expect(e).toEqual({
+                                error: "Section must have a name"
+                            });
                         });
-                    });
-                expect.assertions(1);
-            });
+                    expect.assertions(1);
+                });
 
             test.each([-1, 0])
                 ("name is valid, project id is invalid, throws Error", (id: number) => {
@@ -99,15 +100,16 @@ describe("Test the inputs for the section methods", () => {
                     expect.assertions(1);
                 });
 
-            test("Empty name, throws Error", () => {
-                todoistClient.updateSection(1, { name: "" })
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "You must provide a section name"
+            test.each(["", " "])
+                ("Empty name, throws Error", (name: string) => {
+                    todoistClient.updateSection(1, { name: name })
+                        .catch(e => {
+                            expect(e).toEqual({
+                                error: "You must provide a section name"
+                            });
                         });
-                    });
-                expect.assertions(1);
-            });
+                    expect.assertions(1);
+                });
         });
 
         describe("deleteSection Tests", () => {

@@ -50,15 +50,16 @@ describe("Test the inputs for the project methods", () => {
 
     describe("Unhappy path tests", () => {
         describe("Tests for addProject", () => {
-            test("name not set, error thrown", () => {
-                todoistClient.addProject({ name: "" })
-                    .catch(e => {
-                        expect(e).toEqual({
-                            error: "Project must have a name"
+            test.each(["", " "])
+                ("name not set, error thrown", (name: string) => {
+                    todoistClient.addProject({ name: name })
+                        .catch(e => {
+                            expect(e).toEqual({
+                                error: "Project must have a name"
+                            });
                         });
-                    });
-                expect.assertions(1);
-            });
+                    expect.assertions(1);
+                });
 
             test("color set, but not valid", () => {
                 todoistClient.addProject({
@@ -108,16 +109,17 @@ describe("Test the inputs for the project methods", () => {
                 expect.assertions(1);
             });
 
-            test("name is set, but is empty, Error thrown", () => {
-                todoistClient.updateProject(1, {
-                    name: ""
-                }).catch(e => {
-                    expect(e).toEqual({
-                        error: "Project name cannot be empty or undefined"
+            test.each(["", " "])
+                ("name is set, but is empty, Error thrown", (name: string) => {
+                    todoistClient.updateProject(1, {
+                        name: name
+                    }).catch(e => {
+                        expect(e).toEqual({
+                            error: "Project name cannot be empty or undefined"
+                        });
                     });
+                    expect.assertions(1);
                 });
-                expect.assertions(1);
-            });
 
             test("color is set, but is invalid, Error thrown", () => {
                 todoistClient.updateProject(1, {
