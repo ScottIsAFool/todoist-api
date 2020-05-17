@@ -136,12 +136,7 @@ export const exchangeToken = async (code: string): Promise<string> => {
 };
 
 export const revokeAccessTokens = (): Promise<any> => {
-    try {
-        checkForAccessToken();
-    }
-    catch{
-        return Promise.reject("No access token set");
-    }
+    checkForAccessToken();
 
     const data = {
         client_id: clientId(),

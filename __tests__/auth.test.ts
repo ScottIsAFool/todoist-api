@@ -48,10 +48,14 @@ describe("authentication tests", () => {
             .catch(e => expect(e).toBeUndefined());
     });
 
-    test("checks token revokation throws if no token set", () => {
-        return expect(todoistClient.revokeAccessTokens())
-            .rejects
-            .toEqual(new Error("No access token set"));
+    test("checks token revokation throws if no token set", async () => {
+        expect.assertions(1);
+        try {
+            await todoistClient.revokeAccessTokens()
+        }
+        catch (e) {
+            expect(e).toEqual(new Error("No access token set"));
+        }
     });
 
     // test("checks token revokation throws if not 2xx status", async () => {

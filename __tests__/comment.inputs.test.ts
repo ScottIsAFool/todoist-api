@@ -41,27 +41,27 @@ describe("Input tests for comment methods", () => {
     describe("Unhappy path tests", () => {
         describe("Tests for getTaskComments", () => {
             test.each([-1, 0])
-                ("Invalid task id throws error", (id: number) => {
-                    todoistClient.getTaskComments(id)
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "Invalid Task ID"
-                            });
-                        });
+                ("Invalid task id throws error", async (id: number) => {
                     expect.assertions(1);
+                    try {
+                        await todoistClient.getTaskComments(id);
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid Task ID"));
+                    }
                 });
         });
 
         describe("Tests for getProjectComments", () => {
             test.each([-1, 0])
                 ("Invalid project id throws error", (id: number) => {
-                    todoistClient.getProjectComments(id)
-                        .catch(e => {
-                            expect(e).toEqual({
-                                error: "Invalid Project ID"
-                            });
-                        });
                     expect.assertions(1);
+                    try {
+                        todoistClient.getProjectComments(id)
+                    }
+                    catch (e) {
+                        expect(e).toEqual(new Error("Invalid Project ID"));
+                    }
                 });
         });
 
