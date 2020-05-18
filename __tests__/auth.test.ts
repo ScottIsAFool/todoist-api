@@ -4,11 +4,15 @@ import * as todoistClient from '../src/todoistClient';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from '../src/consts';
 
 import { scopes } from '../src/scopes';
-import { setThwackResponseData } from "../tests/testConfigs";
+import { setThwackResponseData, removeThwackResponse } from "../tests/testConfigs";
 
 describe("authentication tests", () => {
     beforeAll(() => {
         todoistClient.setClientDetails("abcd", "1234");
+    });
+
+    afterEach(() => {
+        todoistClient.setAccessToken("");
     });
 
     test("ensures get auth url is correct", () => {
@@ -33,10 +37,12 @@ describe("authentication tests", () => {
 
         const token = await todoistClient.exchangeToken(code);
         expect(token).toBe(expectedToken);
+
+        removeThwackResponse();
     });
 
     test.each([200, 204])("checks the token revokation succeeds with the right status",
-        (status: number) => {
+        async (status: number) => {
             todoistClient.setAccessToken("abcd");
 
             setThwackResponseData(
@@ -45,7 +51,9 @@ describe("authentication tests", () => {
                 status
             );
 
-            return todoistClient.revokeAccessTokens();
+            await todoistClient.revokeAccessTokens();
+
+            removeThwackResponse();
         });
 
     test("checks token revokation throws if no token set", async () => {
@@ -61,8 +69,9 @@ describe("authentication tests", () => {
     test("checks token revokation throws if not 2xx status", async () => {
         todoistClient.setAccessToken("abcd");
 
+        const revokeUrl = baseSyncUrl + endPoints.accessTokensRevoke;
         setThwackResponseData(
-            baseSyncUrl + endPoints.accessTokensRevoke,
+            revokeUrl,
             {},
             403
         );
@@ -73,6 +82,8 @@ describe("authentication tests", () => {
         catch (e) {
             expect(e).toEqual(new Error());
         }
+        removeThwackResponse();
+
         expect.assertions(1);
     });
 });

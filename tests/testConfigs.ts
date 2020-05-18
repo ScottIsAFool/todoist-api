@@ -22,6 +22,12 @@ export const setThwackResponseData = (
     })
 };
 
+export const removeThwackResponse = () => {
+    thwack.removeEventListener('request', (event: ThwackRequestEvent) => {
+
+    });
+};
+
 export const dontCareAboutResponse = () => {
     thwack.addEventListener('request', (event: ThwackRequestEvent) => {
         const { options } = event;
