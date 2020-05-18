@@ -59,12 +59,17 @@
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
     "stripInternal": true,
   },
+  "include": [
+    "./src/**/*.{ts,tsx}",
+    "./tests/**/*.{ts,tsx}",
+    "./__tests__/**/*.{ts,tsx}",
+  ],
   "exclude": [
     "node_modules",
     "js",
-    "**/*.test.ts",
-    "__tests__",
-    "tests",
-    "src/app.ts"
+    // "**/*.test.ts",
+    // "__tests__",
+    // "tests",
+    // "src/app.ts"
   ]
 }

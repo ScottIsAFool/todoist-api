@@ -1,40 +1,39 @@
 import * as endPoints from './endpoints';
 
 import { Attachment, Comment, Label, Project, Section, Task } from './entities';
+import { Color, isValidColor } from './colors';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
 import thwack, { ThwackOptions, ThwackResponse } from 'thwack';
 
-import { Color } from './colors';
 import create from '@alcadica/state-manager';
-import { isValidColor } from './colors';
 import { scopes } from './scopes';
 
 interface TaskOptionsBase {
-    label_ids?: number[],
-    priority?: priority,
-    due_string?: string,
-    due_date?: string,
-    due_datetime?: string,
-    due_lang?: string,
+    label_ids?: number[];
+    priority?: priority;
+    due_string?: string;
+    due_date?: string;
+    due_datetime?: string;
+    due_lang?: string;
 };
 
 export interface UpdateTaskOptions extends TaskOptionsBase {
-    content?: string,
+    content?: string;
 };
 
 export interface AddTaskOptions extends TaskOptionsBase {
-    content: string,
-    project_id?: number,
-    section_id?: number,
-    parent?: number,
-    order?: number,
+    content: string;
+    project_id?: number;
+    section_id?: number;
+    parent?: number;
+    order?: number;
 };
 
 export interface TaskFetchOptions {
-    project_id?: number,
-    label_id?: number,
-    filter?: string,
-    lang?: string
+    project_id?: number;
+    label_id?: number;
+    filter?: string;
+    lang?: string;
 };
 
 export enum priority {
@@ -46,7 +45,7 @@ export enum priority {
 
 export interface AddCommentOptions {
     content: string;
-    attachment?: Attachment
+    attachment?: Attachment;
 };
 
 export interface UpdateCommentOptions {
@@ -539,8 +538,8 @@ const stringIsUndefinedOrEmpty = (str?: string): boolean => {
 const get = async <T>(
     endPoint: string,
     params: {} = {},
-    requiresAuthentication: boolean = true,
-    useSyncApi: boolean = false
+    requiresAuthentication = true,
+    useSyncApi = false
 ): Promise<T> => {
     const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
     const url = apiUrl + endPoint;
@@ -573,8 +572,8 @@ const get = async <T>(
 const post = async <T>(
     endPoint: string,
     data: {} = {},
-    requiresAuthentication: boolean = true,
-    useSyncApi: boolean = false
+    requiresAuthentication = true,
+    useSyncApi = false
 ): Promise<T> => {
     const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
     const url = apiUrl + endPoint;
@@ -604,8 +603,8 @@ const post = async <T>(
 
 const deleteCall = async (
     endPoint: string,
-    requiresAuthentication: boolean = true,
-    useSyncApi: boolean = false
+    requiresAuthentication = true,
+    useSyncApi = false
 ): Promise<any> => {
     const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
     const url = apiUrl + endPoint;
@@ -632,8 +631,8 @@ const deleteCall = async (
 };
 
 interface AccessToken {
-    access_token: string,
-    token_type: string
+    access_token: string;
+    token_type: string;
 };
 
 /**

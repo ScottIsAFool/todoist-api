@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc --build",
     "start": "node ./out/app.js",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "lint-and-fix": "eslint . --ext .ts --fix"
   },
   "files": [
     "js/**/*"
@@ -21,6 +23,10 @@
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",
+    "@typescript-eslint/eslint-plugin": "^2.33.0",
+    "@typescript-eslint/parser": "^2.33.0",
+    "eslint": "^7.0.0",
+    "eslint-plugin-import": "^2.20.2",
     "jest": "^26.0.1",
     "ts-jest": "^25.5.0"
   }

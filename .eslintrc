@@ -1,0 +1,94 @@
+{
+    "env": {
+        "es6": true,
+        "jest": true
+    },
+    "globals": {
+        "global": true,
+        "module": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:import/errors",
+        "plugin:import/warnings",
+        "plugin:import/typescript",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaFeatures": {
+            "impliedStrict": true
+        },
+        "sourceType": "module",
+        "project": "tsconfig.json"
+    },
+    "plugins": [
+        "import",
+        "@typescript-eslint"
+    ],
+    "settings": {
+        "import/resolver": {
+            "node": {
+                "extensions": [
+                    ".js",
+                    ".jsx",
+                    ".ts",
+                    ".tsx"
+                ]
+            }
+        }
+    },
+    "ignorePatterns": [
+        "jest.config.js",
+        "tx-next-config.js"
+    ],
+    "rules": {
+        "eqeqeq": [
+            "error",
+            "smart"
+        ],
+        "no-unused-vars": "off", // Disabled because of @typescript-eslint/no-unused-vars
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "ignoreRestSiblings": true
+            }
+        ],
+        "no-var": "error",
+        "no-console": "error",
+        "@typescript-eslint/camelcase": "off",
+        // This rule is deprecated, needs fix after it's replaced by naming-convention.
+        "@typescript-eslint/class-name-casing": [
+            "error",
+            {
+                "allowUnderscorePrefix": true
+            }
+        ],
+        // Return types can be inferred by TypeScript
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "no-extra-semi": "off",
+        "@typescript-eslint/no-empty-interface": "off"
+    },
+    "overrides": [
+        {
+            "files": [
+                "**/*.ts?(x)"
+            ],
+            "rules": {
+                "@typescript-eslint/no-use-before-define": [
+                    "error",
+                    {
+                        "functions": false,
+                        "variables": false
+                    }
+                ],
+                // Tsc already does this check, also disabled upstream
+                // Should be available after 2.20.2 in eslint-plugin-import
+                // https://github.com/benmosher/eslint-plugin-import/commit/4f1101e
+                "import/named": "off",
+                "@typescript-eslint/no-explicit-any": "off"
+            }
+        }
+    ]
+}
