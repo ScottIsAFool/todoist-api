@@ -3,7 +3,7 @@ import * as endPoints from './endpoints';
 import { Attachment, Comment, Label, Project, Section, Task } from './entities';
 import { Color, isValidColor } from './colors';
 import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
-import thwack, { ThwackOptions, ThwackResponse } from 'thwack';
+import thwack, { ThwackOptions, ThwackResponse, ThwackInstance } from 'thwack';
 
 import create from '@alcadica/state-manager';
 import { scopes } from './scopes';
@@ -541,32 +541,15 @@ const get = async <T>(
     requiresAuthentication = true,
     useSyncApi = false
 ): Promise<T> => {
-    const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
-    const url = apiUrl + endPoint;
-    const options: ThwackOptions = {
-        params: params
-    };
-
-    if (requiresAuthentication) {
-        checkForAccessToken();
-        options.headers = {
-            "Authorization": `Bearer ${accessToken()}`
-        };
-    }
-
-    let response: ThwackResponse<any>;
-    try {
-        response = await thwack.get(url);
-    }
-    catch (e) {
-        throw new Error();
-    }
-
-    if (response.status >= 300)
-        throw new Error();
-
-    const body = response.data;
-    return body;
+    return await makeTheCall(
+        endPoint,
+        requiresAuthentication,
+        useSyncApi,
+        (u, t, o) => {
+            o.params = params;
+            return t.get(u, o);
+        }
+    );
 };
 
 const post = async <T>(
@@ -574,6 +557,33 @@ const post = async <T>(
     data: {} = {},
     requiresAuthentication = true,
     useSyncApi = false
+): Promise<T> => {
+    return await makeTheCall(
+        endPoint,
+        requiresAuthentication,
+        useSyncApi,
+        (u, t, o) => t.post(u, data, o)
+    );
+};
+
+const deleteCall = async (
+    endPoint: string,
+    requiresAuthentication = true,
+    useSyncApi = false
+): Promise<any> => {
+    return await makeTheCall(
+        endPoint,
+        requiresAuthentication,
+        useSyncApi,
+        (u, t, o) => t.delete(u, o)
+    );
+};
+
+const makeTheCall = async <T>(
+    endPoint: string,
+    requiresAuthentication = true,
+    useSyncApi = false,
+    call: (u: string, t: ThwackInstance, o: ThwackOptions) => Promise<ThwackResponse>
 ): Promise<T> => {
     const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
     const url = apiUrl + endPoint;
@@ -588,7 +598,7 @@ const post = async <T>(
 
     let response: ThwackResponse<any>;
     try {
-        response = await thwack.post(url, data, options);
+        response = await call(url, thwack, options);
     }
     catch (e) {
         throw new Error();
@@ -599,35 +609,6 @@ const post = async <T>(
 
     const body = response.data;
     return body;
-};
-
-const deleteCall = async (
-    endPoint: string,
-    requiresAuthentication = true,
-    useSyncApi = false
-): Promise<any> => {
-    const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
-    const url = apiUrl + endPoint;
-    const options: ThwackOptions = {};
-
-    if (requiresAuthentication) {
-        checkForAccessToken();
-        options.headers = {
-            "Authorization": `Bearer ${accessToken()}`
-        };
-    }
-
-    let response: ThwackResponse<any>;
-    try {
-        response = await thwack.delete(url, options);
-    }
-    catch (e) {
-        throw new Error();
-    }
-
-    if (response.status >= 300) {
-        throw new Error();
-    }
 };
 
 interface AccessToken {
