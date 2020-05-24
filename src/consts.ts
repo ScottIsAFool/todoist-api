@@ -7,3 +7,5 @@ export const authUrl = "https://todoist.com/oauth/authorize";
 export const tokenUrl = "https://todoist.com/oauth/access_token";
 export const baseUrl = apiUrl + version + "/";
 export const baseSyncUrl = syncUrl + syncVersion + "/";
+
+export const todoistHmacHeader = "x-todoist-hmac-sha256";

@@ -2,10 +2,13 @@ import * as endPoints from './endpoints';
 
 import { Attachment, Comment, Label, Project, Section, Task } from './entities';
 import { Color, isValidColor } from './colors';
-import { authUrl, baseSyncUrl, baseUrl, tokenUrl } from './consts';
-import thwack, { ThwackOptions, ThwackResponse, ThwackInstance } from 'thwack';
+import { authUrl, baseSyncUrl, baseUrl, todoistHmacHeader, tokenUrl } from './consts';
+import thwack, { ThwackInstance, ThwackOptions, ThwackResponse } from 'thwack';
 
+import CryptoJS from 'crypto-js';
+import { TodoistEvent } from './webhookEntities';
 import create from '@alcadica/state-manager';
+import hmacSHA256 from 'crypto-js/hmac-sha256';
 import { scopes } from './scopes';
 
 interface TaskOptionsBase {
@@ -516,6 +519,30 @@ export const deleteLabel = (label_id: number): Promise<any> => {
     const endPoint = `${endPoints.labels}/${label_id}`;
 
     return deleteCall(endPoint);
+};
+
+//#endregion
+
+//#region Webhook methods
+
+export const isValidWebhookCall = (
+    event: TodoistEvent,
+    headers: any
+): boolean => {
+    if (stringIsUndefinedOrEmpty(clientSecret())) {
+        throw new Error("Please set the client secret");
+    }
+
+    const xHeader = headers[todoistHmacHeader];
+    if (xHeader === undefined) {
+        throw new Error("Todoist validation header not found");
+    }
+
+    const json = JSON.stringify(event);
+    const hash = hmacSHA256(json, clientSecret());
+    const base64String = hash.toString(CryptoJS.enc.Base64);
+
+    return base64String === xHeader;
 };
 
 //#endregion
