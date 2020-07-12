@@ -1,9 +1,9 @@
 {
-  "name": "todoist-api",
+  "name": "@scottisafool/todoist-api",
   "version": "0.0.1",
   "description": "Todoist REST API Wrapper",
-  "main": "js/todoistClient.js",
-  "types": "js/todoistClient.d.ts",
+  "main": "js/index.js",
+  "types": "js/index.d.ts",
   "scripts": {
     "build": "tsc --build",
     "start": "node ./out/app.js",
