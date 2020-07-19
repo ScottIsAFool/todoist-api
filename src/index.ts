@@ -7,3 +7,4 @@ export * from "./entities";
 export * from "./scopes";
 export * from "./webhookEntities";
 export * from "./webhookTypes";
+export * from "./errors";
