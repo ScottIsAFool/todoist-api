@@ -9,7 +9,12 @@ import {
   todoistHmacHeader,
   tokenUrl,
 } from "./consts";
-import thwack, { ThwackInstance, ThwackOptions, ThwackResponse } from "thwack";
+import thwack, {
+  ThwackInstance,
+  ThwackOptions,
+  ThwackResponse,
+  ThwackResponseError,
+} from "thwack";
 
 import CryptoJS from "crypto-js";
 import { TodoistEvent } from "./webhookEntities";
@@ -642,7 +647,9 @@ const makeTheCall = async <T>(
   try {
     response = await call(url, thwack, options);
   } catch (e) {
-    throw new TodoistHttpError(500);
+    const thwackError = e as ThwackResponseError;
+    const res = thwackError.thwackResponse;
+    throw new TodoistHttpError(res.status, res.statusText);
   }
 
   if (response.status >= 300) {
