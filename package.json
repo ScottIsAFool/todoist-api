@@ -1,6 +1,6 @@
 {
   "name": "@scottisafool/todoist-api",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Todoist REST API Wrapper",
   "main": "js/index.js",
   "types": "js/index.d.ts",
