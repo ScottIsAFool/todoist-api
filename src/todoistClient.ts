@@ -1,285 +1,283 @@
-import * as endPoints from './endpoints';
+import * as endPoints from "./endpoints";
 
-import { Attachment, Comment, Label, Project, Section, Task } from './entities';
-import { Color, isValidColor } from './colors';
-import { authUrl, baseSyncUrl, baseUrl, todoistHmacHeader, tokenUrl } from './consts';
-import thwack, { ThwackInstance, ThwackOptions, ThwackResponse } from 'thwack';
+import { Attachment, Comment, Label, Project, Section, Task } from "./entities";
+import { Color, isValidColor } from "./colors";
+import {
+  authUrl,
+  baseSyncUrl,
+  baseUrl,
+  todoistHmacHeader,
+  tokenUrl,
+} from "./consts";
+import thwack, { ThwackInstance, ThwackOptions, ThwackResponse } from "thwack";
 
-import CryptoJS from 'crypto-js';
-import { TodoistEvent } from './webhookEntities';
-import create from '@alcadica/state-manager';
-import hmacSHA256 from 'crypto-js/hmac-sha256';
-import { scopes } from './scopes';
+import CryptoJS from "crypto-js";
+import { TodoistEvent } from "./webhookEntities";
+import { TodoistHttpError } from "./errors";
+import create from "@alcadica/state-manager";
+import hmacSHA256 from "crypto-js/hmac-sha256";
+import { scopes } from "./scopes";
 
 interface TaskOptionsBase {
-    label_ids?: number[];
-    priority?: priority;
-    due_string?: string;
-    due_date?: string;
-    due_datetime?: string;
-    due_lang?: string;
-};
+  label_ids?: number[];
+  priority?: priority;
+  due_string?: string;
+  due_date?: string;
+  due_datetime?: string;
+  due_lang?: string;
+}
 
 export interface UpdateTaskOptions extends TaskOptionsBase {
-    content?: string;
-};
+  content?: string;
+}
 
 export interface AddTaskOptions extends TaskOptionsBase {
-    content: string;
-    project_id?: number;
-    section_id?: number;
-    parent?: number;
-    order?: number;
-};
+  content: string;
+  project_id?: number;
+  section_id?: number;
+  parent?: number;
+  order?: number;
+}
 
 export interface TaskFetchOptions {
-    project_id?: number;
-    label_id?: number;
-    filter?: string;
-    lang?: string;
-};
+  project_id?: number;
+  label_id?: number;
+  filter?: string;
+  lang?: string;
+}
 
 export enum priority {
-    urgent = 4,
-    high = 3,
-    medium = 2,
-    normal = 1
-};
+  urgent = 4,
+  high = 3,
+  medium = 2,
+  normal = 1,
+}
 
 export interface AddCommentOptions {
-    content: string;
-    attachment?: Attachment;
-};
+  content: string;
+  attachment?: Attachment;
+}
 
 export interface UpdateCommentOptions {
-    content?: string;
-};
+  content?: string;
+}
 
 interface SectionOptionsBase {
-    name: string;
-};
+  name: string;
+}
 
 export interface AddSectionOptions extends SectionOptionsBase {
-    project_id: number;
-    order?: number;
-};
+  project_id: number;
+  order?: number;
+}
 
-export interface UpdateSectionOptions extends SectionOptionsBase {
-};
+export interface UpdateSectionOptions extends SectionOptionsBase {}
 
 export interface AddProjectOptions {
-    name: string;
-    parent?: number;
-    color?: Color;
-};
+  name: string;
+  parent?: number;
+  color?: Color;
+}
 
 export interface UpdateProjectOptions {
-    name?: string;
-    color?: Color;
-};
+  name?: string;
+  color?: Color;
+}
 
 interface LabelOptionsBase {
-    order?: number;
-    color?: Color;
-};
+  order?: number;
+  color?: Color;
+}
 
 export interface AddLabelOptions extends LabelOptionsBase {
-    name: string;
-};
+  name: string;
+}
 
 export interface UpdateLabelOptions extends LabelOptionsBase {
-    name?: string;
-};
+  name?: string;
+}
 
 interface ClientDetails {
-    clientSecret: string;
-    clientId: string;
-};
+  clientSecret: string;
+  clientId: string;
+}
 
 const clientDetailsState = create<ClientDetails>();
 const accessTokenState = create<AccessToken>();
 
 //#region Authentication methods
 
-export const setClientDetails = (
-    clientSecret: string,
-    clientId: string
-) => {
-    clientDetailsState.update({
-        clientId: clientId,
-        clientSecret: clientSecret
-    });
-}
+export const setClientDetails = (clientSecret: string, clientId: string) => {
+  clientDetailsState.update({
+    clientId: clientId,
+    clientSecret: clientSecret,
+  });
+};
 
 export const setAccessToken = (accessToken: string) => {
-    accessTokenState.update({ access_token: accessToken });
+  accessTokenState.update({ access_token: accessToken });
 };
 
 export const getAuthUrl = (scopes: scopes[], state: string) => {
-    const scope = scopes.toString();
-    return `${authUrl}?client_id=${clientId()}&scope=${scope}&state=${state}`;
+  const scope = scopes.toString();
+  return `${authUrl}?client_id=${clientId()}&scope=${scope}&state=${state}`;
 };
 
 export const exchangeToken = async (code: string): Promise<string> => {
-    const data = {
-        client_id: clientId(),
-        client_secret: clientSecret(),
-        code: code
-    };
+  const data = {
+    client_id: clientId(),
+    client_secret: clientSecret(),
+    code: code,
+  };
 
-    const response = await thwack.post(tokenUrl, data);
+  const response = await thwack.post(tokenUrl, data);
 
-    if (response.status !== 200)
-        throw Error;
+  if (response.status !== 200) throw Error;
 
-    const accessToken: AccessToken = response.data;
+  const accessToken: AccessToken = response.data;
 
-    return accessToken.access_token;
+  return accessToken.access_token;
 };
 
 export const revokeAccessTokens = (): Promise<any> => {
-    checkForAccessToken();
+  checkForAccessToken();
 
-    const data = {
-        client_id: clientId(),
-        client_secret: clientSecret(),
-        access_token: accessToken()
-    }
+  const data = {
+    client_id: clientId(),
+    client_secret: clientSecret(),
+    access_token: accessToken(),
+  };
 
-    return post<any>(
-        endPoints.accessTokensRevoke,
-        data,
-        false,
-        true);
+  return post<any>(endPoints.accessTokensRevoke, data, false, true);
 };
 
 //#endregion
 
 //#region Project methods
 export const getAllProjects = (): Promise<Project[]> => {
-    return get<Project[]>(endPoints.projects);
+  return get<Project[]>(endPoints.projects);
 };
 
 export const addProject = (options: AddProjectOptions): Promise<Project> => {
-    if (stringIsUndefinedOrEmpty(options.name)) {
-        throw new Error("Project must have a name");
-    }
+  if (stringIsUndefinedOrEmpty(options.name)) {
+    throw new Error("Project must have a name");
+  }
 
-    if (options.color && !isValidColor(options.color.id)) {
-        throw new Error("Color ID is invalid");
-    }
+  if (options.color && !isValidColor(options.color.id)) {
+    throw new Error("Color ID is invalid");
+  }
 
-    return post<Project>(
-        endPoints.projects,
-        options
-    );
+  return post<Project>(endPoints.projects, options);
 };
 
 export const getProject = (project_id: number): Promise<Project> => {
-    if (project_id <= 0) {
-        throw new Error("Invalid Project ID");
-    }
+  if (project_id <= 0) {
+    throw new Error("Invalid Project ID");
+  }
 
-    const endPoint = `${endPoints.projects}/${project_id}`;
+  const endPoint = `${endPoints.projects}/${project_id}`;
 
-    return get<Project>(endPoint);
+  return get<Project>(endPoint);
 };
 
-export const updateProject = (project_id: number, options: UpdateProjectOptions): Promise<any> => {
-    if (project_id <= 0) {
-        throw new Error("Invalid Project ID");
-    }
-    if (!options.name && !options.color) {
-        throw new Error("You must provide either a name or a color to update");
-    }
-    if (options.name && stringIsUndefinedOrEmpty(options.name)) {
-        throw new Error("Project name cannot be empty or undefined");
-    }
-    if (options.color && !isValidColor(options.color.id)) {
-        throw new Error("Color ID is invalid");
-    }
+export const updateProject = (
+  project_id: number,
+  options: UpdateProjectOptions
+): Promise<any> => {
+  if (project_id <= 0) {
+    throw new Error("Invalid Project ID");
+  }
+  if (!options.name && !options.color) {
+    throw new Error("You must provide either a name or a color to update");
+  }
+  if (options.name && stringIsUndefinedOrEmpty(options.name)) {
+    throw new Error("Project name cannot be empty or undefined");
+  }
+  if (options.color && !isValidColor(options.color.id)) {
+    throw new Error("Color ID is invalid");
+  }
 
-    const endPoint = `${endPoints.projects}/${project_id}`;
+  const endPoint = `${endPoints.projects}/${project_id}`;
 
-    return post<any>(endPoint, options);
+  return post<any>(endPoint, options);
 };
 
 export const deleteProject = (project_id: number): Promise<any> => {
-    if (project_id <= 0) {
-        throw new Error("Invalid Project ID");
-    }
+  if (project_id <= 0) {
+    throw new Error("Invalid Project ID");
+  }
 
-    const endPoint = `${endPoints.projects}/${project_id}`;
+  const endPoint = `${endPoints.projects}/${project_id}`;
 
-    return deleteCall(endPoint);
+  return deleteCall(endPoint);
 };
 //#endregion
 
 //#region Section methods
 
 export const getAllSections = (): Promise<Section[]> => {
-    return get<Section[]>(endPoints.sections);
+  return get<Section[]>(endPoints.sections);
 };
 
 export const getProjectSections = (project_id: number): Promise<Section[]> => {
-    if (project_id <= 0) {
-        throw new Error("Invalid Project ID");
-    }
+  if (project_id <= 0) {
+    throw new Error("Invalid Project ID");
+  }
 
-    const data = {
-        project_id: project_id
-    };
+  const data = {
+    project_id: project_id,
+  };
 
-    return get<Section[]>(endPoints.sections, data);
+  return get<Section[]>(endPoints.sections, data);
 };
 
 export const addSection = (options: AddSectionOptions): Promise<Section> => {
-    if (stringIsUndefinedOrEmpty(options.name)) {
-        throw new Error("Section must have a name");
-    }
+  if (stringIsUndefinedOrEmpty(options.name)) {
+    throw new Error("Section must have a name");
+  }
 
-    if (options.project_id <= 0) {
-        throw new Error("Invalid Project ID");
-    }
+  if (options.project_id <= 0) {
+    throw new Error("Invalid Project ID");
+  }
 
-    return post<Section>(
-        endPoints.sections,
-        options
-    );
+  return post<Section>(endPoints.sections, options);
 };
 
 export const getSection = (section_id: number): Promise<Section> => {
-    if (section_id <= 0) {
-        throw new Error("Invalid Section ID");
-    }
+  if (section_id <= 0) {
+    throw new Error("Invalid Section ID");
+  }
 
-    const endPoint = `${endPoints.sections}/${section_id}`;
+  const endPoint = `${endPoints.sections}/${section_id}`;
 
-    return get<Section>(endPoint);
+  return get<Section>(endPoint);
 };
 
-export const updateSection = (section_id: number, options: UpdateSectionOptions): Promise<any> => {
-    if (section_id <= 0) {
-        throw new Error("Invalid Section ID");
-    }
+export const updateSection = (
+  section_id: number,
+  options: UpdateSectionOptions
+): Promise<any> => {
+  if (section_id <= 0) {
+    throw new Error("Invalid Section ID");
+  }
 
-    if (stringIsUndefinedOrEmpty(options.name)) {
-        throw new Error("You must provide a section name");
-    }
+  if (stringIsUndefinedOrEmpty(options.name)) {
+    throw new Error("You must provide a section name");
+  }
 
-    const endPoint = `${endPoints.sections}/${section_id}`;
+  const endPoint = `${endPoints.sections}/${section_id}`;
 
-    return post<any>(endPoint, options);
+  return post<any>(endPoint, options);
 };
 
 export const deleteSection = (section_id: number): Promise<any> => {
-    if (section_id <= 0) {
-        throw new Error("Invalid Section ID");
-    }
+  if (section_id <= 0) {
+    throw new Error("Invalid Section ID");
+  }
 
-    const endPoint = `${endPoints.sections}/${section_id}`;
+  const endPoint = `${endPoints.sections}/${section_id}`;
 
-    return deleteCall(endPoint);
+  return deleteCall(endPoint);
 };
 
 //#endregion
@@ -287,91 +285,91 @@ export const deleteSection = (section_id: number): Promise<any> => {
 //#region Task methods
 
 export const getTasks = (options?: TaskFetchOptions): Promise<Task[]> => {
-    if (options) {
-        if ((options.label_id || options.project_id) && options.filter) {
-            throw new Error("You may provide a label id and/or project id, or a filter name");
-        }
+  if (options) {
+    if ((options.label_id || options.project_id) && options.filter) {
+      throw new Error(
+        "You may provide a label id and/or project id, or a filter name"
+      );
     }
+  }
 
-    return get<Task[]>(
-        endPoints.tasks,
-        options);
+  return get<Task[]>(endPoints.tasks, options);
 };
 
 export const addTask = (options: AddTaskOptions): Promise<Task> => {
-    if (stringIsUndefinedOrEmpty(options.content)) {
-        throw new Error("You must supply content");
-    }
+  if (stringIsUndefinedOrEmpty(options.content)) {
+    throw new Error("You must supply content");
+  }
 
-    const [dueOptionsValid] = hasValidDueOptions(options);
+  const [dueOptionsValid] = hasValidDueOptions(options);
 
-    if (!dueOptionsValid) {
-        throw new Error("Only set one due_* option to update the due time")
-    }
+  if (!dueOptionsValid) {
+    throw new Error("Only set one due_* option to update the due time");
+  }
 
-    return post<Task>(
-        endPoints.tasks,
-        options
-    );
+  return post<Task>(endPoints.tasks, options);
 };
 
 export const getTask = (task_id: number): Promise<Task> => {
-    if (task_id <= 0) {
-        throw new Error("Invalid task ID");
-    }
+  if (task_id <= 0) {
+    throw new Error("Invalid task ID");
+  }
 
-    const endPoint = `${endPoints.tasks}/${task_id}`;
-    return get<Task>(endPoint);
+  const endPoint = `${endPoints.tasks}/${task_id}`;
+  return get<Task>(endPoint);
 };
 
-export const updateTask = (task_id: number, options: UpdateTaskOptions): Promise<any> => {
-    if (task_id <= 0) {
-        throw new Error("Invalid task ID");
-    }
+export const updateTask = (
+  task_id: number,
+  options: UpdateTaskOptions
+): Promise<any> => {
+  if (task_id <= 0) {
+    throw new Error("Invalid task ID");
+  }
 
-    const [dueOptionsValid, dueOptionsCount] = hasValidDueOptions(options);
+  const [dueOptionsValid, dueOptionsCount] = hasValidDueOptions(options);
 
-    if (!dueOptionsValid) {
-        throw new Error("Only set one due_* option to update the due time")
-    }
+  if (!dueOptionsValid) {
+    throw new Error("Only set one due_* option to update the due time");
+  }
 
-    if (dueOptionsCount === 0 && !options.content && !options.label_ids) {
-        throw new Error("Please update either due date, color, content, or labels")
-    }
+  if (dueOptionsCount === 0 && !options.content && !options.label_ids) {
+    throw new Error("Please update either due date, color, content, or labels");
+  }
 
-    const endPoint = `${endPoints.tasks}/${task_id}`;
+  const endPoint = `${endPoints.tasks}/${task_id}`;
 
-    return post<any>(endPoint, options);
+  return post<any>(endPoint, options);
 };
 
 export const closeTask = (task_id: number): Promise<any> => {
-    if (task_id <= 0) {
-        throw new Error("Invalid task ID");
-    }
+  if (task_id <= 0) {
+    throw new Error("Invalid task ID");
+  }
 
-    const endPoint = `${endPoints.tasks}/${task_id}/close`;
+  const endPoint = `${endPoints.tasks}/${task_id}/close`;
 
-    return post<any>(endPoint);
+  return post<any>(endPoint);
 };
 
 export const reopenTask = (task_id: number): Promise<any> => {
-    if (task_id <= 0) {
-        throw new Error("Invalid task ID");
-    }
+  if (task_id <= 0) {
+    throw new Error("Invalid task ID");
+  }
 
-    const endPoint = `${endPoints.tasks}/${task_id}/reopen`;
+  const endPoint = `${endPoints.tasks}/${task_id}/reopen`;
 
-    return post<any>(endPoint);
+  return post<any>(endPoint);
 };
 
 export const deleteTask = (task_id: number): Promise<any> => {
-    if (task_id <= 0) {
-        throw new Error("Invalid task ID");
-    }
+  if (task_id <= 0) {
+    throw new Error("Invalid task ID");
+  }
 
-    const endPoint = `${endPoints.tasks}/${task_id}`;
+  const endPoint = `${endPoints.tasks}/${task_id}`;
 
-    return deleteCall(endPoint);
+  return deleteCall(endPoint);
 };
 
 //#endregion
@@ -379,88 +377,97 @@ export const deleteTask = (task_id: number): Promise<any> => {
 //#region Comment methods
 
 export const getTaskComments = (task_id: number): Promise<Comment[]> => {
-    if (task_id <= 0) {
-        throw new Error("Invalid Task ID");
-    }
+  if (task_id <= 0) {
+    throw new Error("Invalid Task ID");
+  }
 
-    const endpoint = `${endPoints.comments}?task_id=${task_id}`;
+  const endpoint = `${endPoints.comments}?task_id=${task_id}`;
 
-    return get<Comment[]>(endpoint);
+  return get<Comment[]>(endpoint);
 };
 
 export const getProjectComments = (project_id: number): Promise<Comment[]> => {
-    if (project_id <= 0) {
-        throw new Error("Invalid Project ID");
-    }
+  if (project_id <= 0) {
+    throw new Error("Invalid Project ID");
+  }
 
-    const endpoint = `${endPoints.comments}?project_id=${project_id}`;
+  const endpoint = `${endPoints.comments}?project_id=${project_id}`;
 
-    return get<Comment[]>(endpoint);
+  return get<Comment[]>(endpoint);
 };
 
-export const addTaskComment = (task_id: number, options: AddCommentOptions): Promise<Comment> => {
-    if (task_id <= 0) {
-        throw new Error("Invalid Task ID");
-    }
-    if (stringIsUndefinedOrEmpty(options.content)) {
-        throw new Error("You must supply content for the comment");
-    }
+export const addTaskComment = (
+  task_id: number,
+  options: AddCommentOptions
+): Promise<Comment> => {
+  if (task_id <= 0) {
+    throw new Error("Invalid Task ID");
+  }
+  if (stringIsUndefinedOrEmpty(options.content)) {
+    throw new Error("You must supply content for the comment");
+  }
 
-    const data = {
-        task_id: task_id,
-        ...options
-    };
+  const data = {
+    task_id: task_id,
+    ...options,
+  };
 
-    return post<Comment>(endPoints.comments, data);
+  return post<Comment>(endPoints.comments, data);
 };
 
-export const addProjectComment = (project_id: number, options: AddCommentOptions): Promise<Comment> => {
-    if (project_id <= 0) {
-        throw new Error("Invalid Project ID");
-    }
-    if (stringIsUndefinedOrEmpty(options.content)) {
-        throw new Error("You must supply content for the comment");
-    }
+export const addProjectComment = (
+  project_id: number,
+  options: AddCommentOptions
+): Promise<Comment> => {
+  if (project_id <= 0) {
+    throw new Error("Invalid Project ID");
+  }
+  if (stringIsUndefinedOrEmpty(options.content)) {
+    throw new Error("You must supply content for the comment");
+  }
 
-    const data = {
-        project_id: project_id,
-        ...options
-    };
+  const data = {
+    project_id: project_id,
+    ...options,
+  };
 
-    return post<Comment>(endPoints.comments, data);
+  return post<Comment>(endPoints.comments, data);
 };
 
 export const getComment = (comment_id: number): Promise<Comment> => {
-    if (comment_id <= 0) {
-        throw new Error("Invalid Comment ID");
-    }
+  if (comment_id <= 0) {
+    throw new Error("Invalid Comment ID");
+  }
 
-    const endpoint = `${endPoints.comments}/${comment_id}`;
+  const endpoint = `${endPoints.comments}/${comment_id}`;
 
-    return get<Comment>(endpoint);
+  return get<Comment>(endpoint);
 };
 
-export const updateComment = (comment_id: number, options: UpdateCommentOptions): Promise<any> => {
-    if (comment_id <= 0) {
-        throw new Error("Invalid Comment ID");
-    }
-    if (stringIsUndefinedOrEmpty(options.content)) {
-        throw new Error("You must supply content for the comment");
-    }
+export const updateComment = (
+  comment_id: number,
+  options: UpdateCommentOptions
+): Promise<any> => {
+  if (comment_id <= 0) {
+    throw new Error("Invalid Comment ID");
+  }
+  if (stringIsUndefinedOrEmpty(options.content)) {
+    throw new Error("You must supply content for the comment");
+  }
 
-    const endpoint = `${endPoints.comments}/${comment_id}`;
+  const endpoint = `${endPoints.comments}/${comment_id}`;
 
-    return post<any>(endpoint, options);
+  return post<any>(endpoint, options);
 };
 
 export const deleteComment = (comment_id: number): Promise<any> => {
-    if (comment_id <= 0) {
-        throw new Error("Invalid Comment ID");
-    }
+  if (comment_id <= 0) {
+    throw new Error("Invalid Comment ID");
+  }
 
-    const endpoint = `${endPoints.comments}/${comment_id}`;
+  const endpoint = `${endPoints.comments}/${comment_id}`;
 
-    return deleteCall(endpoint);
+  return deleteCall(endpoint);
 };
 
 //#endregion
@@ -468,57 +475,62 @@ export const deleteComment = (comment_id: number): Promise<any> => {
 //#region Label methods
 
 export const getLabels = (): Promise<Label[]> => {
-    return get<Label[]>(endPoints.labels);
+  return get<Label[]>(endPoints.labels);
 };
 
 export const addLabel = (options: AddLabelOptions): Promise<Label> => {
-    if (stringIsUndefinedOrEmpty(options.name)) {
-        throw new Error("You must provide a name for the label");
-    }
-    if (options.color && !isValidColor(options.color.id)) {
-        throw new Error("Color ID is invalid");
-    }
+  if (stringIsUndefinedOrEmpty(options.name)) {
+    throw new Error("You must provide a name for the label");
+  }
+  if (options.color && !isValidColor(options.color.id)) {
+    throw new Error("Color ID is invalid");
+  }
 
-    return post<Label>(endPoints.labels, options);
+  return post<Label>(endPoints.labels, options);
 };
 
 export const getLabel = (label_id: number): Promise<Label> => {
-    if (label_id <= 0) {
-        throw new Error("Invalid label ID");
-    }
+  if (label_id <= 0) {
+    throw new Error("Invalid label ID");
+  }
 
-    const endPoint = `${endPoints.labels}/${label_id}`;
+  const endPoint = `${endPoints.labels}/${label_id}`;
 
-    return get<Label>(endPoint);
+  return get<Label>(endPoint);
 };
 
-export const updateLabel = (label_id: number, options: UpdateLabelOptions): Promise<any> => {
-    if (label_id <= 0) {
-        throw new Error("Invalid label ID");
-    }
-    if (!options.name && !options.color && !options.order) {
-        throw new Error("You must provide either a name, color or order to update the label");
-    }
-    if (options.name && stringIsUndefinedOrEmpty(options.name)) {
-        throw new Error("You must provide a valid name in order to update");
-    }
-    if (options.color && !isValidColor(options.color.id)) {
-        throw new Error("Color ID is invalid");
-    }
+export const updateLabel = (
+  label_id: number,
+  options: UpdateLabelOptions
+): Promise<any> => {
+  if (label_id <= 0) {
+    throw new Error("Invalid label ID");
+  }
+  if (!options.name && !options.color && !options.order) {
+    throw new Error(
+      "You must provide either a name, color or order to update the label"
+    );
+  }
+  if (options.name && stringIsUndefinedOrEmpty(options.name)) {
+    throw new Error("You must provide a valid name in order to update");
+  }
+  if (options.color && !isValidColor(options.color.id)) {
+    throw new Error("Color ID is invalid");
+  }
 
-    const endPoint = `${endPoints.labels}/${label_id}`;
+  const endPoint = `${endPoints.labels}/${label_id}`;
 
-    return post<any>(endPoint, options);
+  return post<any>(endPoint, options);
 };
 
 export const deleteLabel = (label_id: number): Promise<any> => {
-    if (label_id <= 0) {
-        throw new Error("Invalid label ID");
-    }
+  if (label_id <= 0) {
+    throw new Error("Invalid label ID");
+  }
 
-    const endPoint = `${endPoints.labels}/${label_id}`;
+  const endPoint = `${endPoints.labels}/${label_id}`;
 
-    return deleteCall(endPoint);
+  return deleteCall(endPoint);
 };
 
 //#endregion
@@ -526,31 +538,31 @@ export const deleteLabel = (label_id: number): Promise<any> => {
 //#region Webhook methods
 
 export const isValidWebhookCall = (
-    event: TodoistEvent,
-    headers: any
+  event: TodoistEvent,
+  headers: any
 ): boolean => {
-    if (stringIsUndefinedOrEmpty(clientSecret())) {
-        throw new Error("Please set the client secret");
-    }
+  if (stringIsUndefinedOrEmpty(clientSecret())) {
+    throw new Error("Please set the client secret");
+  }
 
-    const xHeader = headers[todoistHmacHeader];
-    if (xHeader === undefined) {
-        throw new Error("Todoist validation header not found");
-    }
+  const xHeader = headers[todoistHmacHeader];
+  if (xHeader === undefined) {
+    throw new Error("Todoist validation header not found");
+  }
 
-    const json = JSON.stringify(event);
-    const hash = hmacSHA256(json, clientSecret());
-    const base64String = hash.toString(CryptoJS.enc.Base64);
+  const json = JSON.stringify(event);
+  const hash = hmacSHA256(json, clientSecret());
+  const base64String = hash.toString(CryptoJS.enc.Base64);
 
-    return base64String === xHeader;
+  return base64String === xHeader;
 };
 
 //#endregion
 
 const checkForAccessToken = () => {
-    if (stringIsUndefinedOrEmpty(accessToken())) {
-        throw new Error("No access token set");
-    }
+  if (stringIsUndefinedOrEmpty(accessToken())) {
+    throw new Error("No access token set");
+  }
 };
 
 const accessToken = () => accessTokenState.getState().access_token;
@@ -558,106 +570,111 @@ const clientId = () => clientDetailsState.getState().clientId;
 const clientSecret = () => clientDetailsState.getState().clientSecret;
 
 const stringIsUndefinedOrEmpty = (str?: string): boolean => {
-    return str === undefined
-        || str.trim() === "";
+  return str === undefined || str.trim() === "";
 };
 
 const get = async <T>(
-    endPoint: string,
-    params: {} = {},
-    requiresAuthentication = true,
-    useSyncApi = false
+  endPoint: string,
+  params: {} = {},
+  requiresAuthentication = true,
+  useSyncApi = false
 ): Promise<T> => {
-    return await makeTheCall(
-        endPoint,
-        requiresAuthentication,
-        useSyncApi,
-        (u, t, o) => {
-            o.params = params;
-            return t.get(u, o);
-        }
-    );
+  return await makeTheCall(
+    endPoint,
+    requiresAuthentication,
+    useSyncApi,
+    (u, t, o) => {
+      o.params = params;
+      return t.get(u, o);
+    }
+  );
 };
 
 const post = async <T>(
-    endPoint: string,
-    data: {} = {},
-    requiresAuthentication = true,
-    useSyncApi = false
+  endPoint: string,
+  data: {} = {},
+  requiresAuthentication = true,
+  useSyncApi = false
 ): Promise<T> => {
-    return await makeTheCall(
-        endPoint,
-        requiresAuthentication,
-        useSyncApi,
-        (u, t, o) => t.post(u, data, o)
-    );
+  return await makeTheCall(
+    endPoint,
+    requiresAuthentication,
+    useSyncApi,
+    (u, t, o) => t.post(u, data, o)
+  );
 };
 
 const deleteCall = async (
-    endPoint: string,
-    requiresAuthentication = true,
-    useSyncApi = false
+  endPoint: string,
+  requiresAuthentication = true,
+  useSyncApi = false
 ): Promise<any> => {
-    return await makeTheCall(
-        endPoint,
-        requiresAuthentication,
-        useSyncApi,
-        (u, t, o) => t.delete(u, o)
-    );
+  return await makeTheCall(
+    endPoint,
+    requiresAuthentication,
+    useSyncApi,
+    (u, t, o) => t.delete(u, o)
+  );
 };
 
 const makeTheCall = async <T>(
-    endPoint: string,
-    requiresAuthentication = true,
-    useSyncApi = false,
-    call: (u: string, t: ThwackInstance, o: ThwackOptions) => Promise<ThwackResponse>
+  endPoint: string,
+  requiresAuthentication = true,
+  useSyncApi = false,
+  call: (
+    u: string,
+    t: ThwackInstance,
+    o: ThwackOptions
+  ) => Promise<ThwackResponse>
 ): Promise<T> => {
-    const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
-    const url = apiUrl + endPoint;
-    const options: ThwackOptions = {};
+  const apiUrl = useSyncApi ? baseSyncUrl : baseUrl;
+  const url = apiUrl + endPoint;
+  const options: ThwackOptions = {};
 
-    if (requiresAuthentication) {
-        checkForAccessToken();
-        options.headers = {
-            "Authorization": `Bearer ${accessToken()}`
-        };
-    }
+  if (requiresAuthentication) {
+    checkForAccessToken();
+    options.headers = {
+      Authorization: `Bearer ${accessToken()}`,
+    };
+  }
 
-    let response: ThwackResponse<any>;
-    try {
-        response = await call(url, thwack, options);
-    }
-    catch (e) {
-        throw new Error();
-    }
+  let response: ThwackResponse<any>;
+  try {
+    response = await call(url, thwack, options);
+  } catch (e) {
+    throw new TodoistHttpError(500);
+  }
 
-    if (response.status >= 300)
-        throw new Error();
+  if (response.status >= 300) {
+    throw new TodoistHttpError(response.status);
+  }
 
-    const body = response.data;
-    return body;
+  const body = response.data;
+  return body;
 };
 
 interface AccessToken {
-    access_token: string;
-    token_type: string;
-};
+  access_token: string;
+  token_type: string;
+}
 
 /**
- * @param options 
+ * @param options
  * @internal
  */
-export const hasValidDueOptions = (options: TaskOptionsBase): [boolean, number] => {
-    let dueOptionsSet = 0;
-    if (options.due_date) {
-        dueOptionsSet++;
-    }
-    if (options.due_datetime) {
-        dueOptionsSet++;
-    }
-    if (options.due_string) {
-        dueOptionsSet++;
-    }
+export const hasValidDueOptions = (
+  options: TaskOptionsBase
+): [boolean, number] => {
+  let dueOptionsSet = 0;
+  if (options.due_date) {
+    dueOptionsSet++;
+  }
+  if (options.due_datetime) {
+    dueOptionsSet++;
+  }
+  if (options.due_string) {
+    dueOptionsSet++;
+  }
 
-    return [dueOptionsSet <= 1, dueOptionsSet];
+  return [dueOptionsSet <= 1, dueOptionsSet];
 };
